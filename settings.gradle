@@ -1,0 +1,13 @@
+include 'cicomponents-api'
+
+include 'cicomponents-core'
+include 'cicomponents-common'
+
+include 'cicomponents-fs-api'
+include 'cicomponents-fs'
+include 'cicomponents-git-api'
+include 'cicomponents-git'
+
+include 'cicomponents-ci' // self-hosted CI
+
+rootProject.name = 'cicomponents'

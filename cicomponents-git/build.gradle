@@ -1,0 +1,13 @@
+dependencies {
+    compile project(':cicomponents-git-api')
+    compile project(':cicomponents-common')
+
+    compile 'org.apache.directory.shared:shared-ldap-model:1.0.0-M13'
+}
+
+jar {
+    manifest {
+        instruction 'Provide-Capability',
+                    'osgi.service;objectClass:List<String>="org.cicomponents.git.GitRevisionEmitter"'
+    }
+}

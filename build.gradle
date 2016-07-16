@@ -1,0 +1,215 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:3.1.0'
+        classpath "gradle.plugin.com.github.lburgazzoli:gradle-karaf-plugin:0.0.31"
+    }
+}
+
+plugins {
+    id "com.github.hierynomus.license" version "0.12.1"
+    id 'com.palantir.git-version' version '0.5.2'
+}
+
+// Maven
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+apply plugin: "com.github.lburgazzoli.karaf"
+
+publishing {
+    publications {
+        Publication(MavenPublication) {
+            groupId rootProject.group
+            artifactId rootProject.name
+            artifact("${rootProject.buildDir}/karaf/features/${rootProject.name}-${rootProject.version}.xml") {
+                classifier "features"
+            }
+        }
+    }
+}
+
+allprojects {
+    apply plugin: 'idea'
+    apply plugin: 'java'
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
+}
+
+subprojects {
+    version rootProject.version
+    group rootProject.group
+
+    apply plugin: 'java'
+    apply plugin: 'osgi'
+    apply plugin: 'license'
+    apply plugin: 'java-library-distribution'
+    apply plugin: 'biz.aQute.bnd.builder'
+
+    apply plugin: 'maven'
+    apply plugin: 'maven-publish'
+
+
+    license {
+      header rootProject.file('LICENSE-HEADER')
+    }
+
+    publishing {
+        publications {
+            Publication(MavenPublication) {
+                from components.java
+                groupId project.group
+                artifactId project.name
+                version project.version
+            }
+        }
+    }
+
+    dependencies {
+        // The production code uses the SLF4J logging API at compile time
+        compile 'org.slf4j:slf4j-api:1.7.18'
+
+        // Unit testing
+        testCompile 'org.testng:testng:6.9.10'
+
+        // Remove boilerplate
+        compile 'org.projectlombok:lombok:1.16.8'
+
+        // Guava
+        compile 'com.google.guava:guava:19.0'
+
+        // OSGi
+        compile 'org.osgi:org.osgi.core:6.0.0'
+        compile 'org.osgi:org.osgi.service.cm:1.5.0'
+        compile 'org.osgi:org.osgi.service.component:1.3.0'
+        compile 'biz.aQute.bnd:biz.aQute.bndlib:3.2.0'
+
+    }
+
+    test.useTestNG()
+
+}
+
+idea {
+    project {
+        languageLevel = '1.8'
+        vcs = 'Git'
+        ipr.withXml { xmlFile ->
+            // enable 'Annotation Processors'
+            xmlFile.asNode().component.find {
+                it.@name == 'CompilerConfiguration'
+            }['annotationProcessing'][0].replaceNode {
+                annotationProcessing {
+                    profile(default: true, name: 'Default', useClasspath: 'true', enabled: true)
+                }
+            }
+        }
+    }
+}
+
+
+configurations {
+    dist
+
+    [dist].forEach {
+        // Exclude packages that might interfere with Karaf's logging
+        it.exclude group: 'org.slf4j'
+        it.exclude group: 'commons-logging'
+        // Exclude javax.servlet so that it doesn't interfere with Karaf's setup
+        it.exclude group: 'javax'
+        it.exclude group: 'javax.servlet'
+        // Exclude other packages that would interfere with Karaf's setup
+        it.exclude group: 'org.apache.karaf'
+        it.exclude group: 'org.apache.karaf.jaas'
+        it.exclude group: 'org.apache.karaf.shell'
+        it.exclude group: 'org.apache.karaf.config'
+        it.exclude group: 'org.apache.felix'
+        it.exclude group: 'org.eclipse.jetty'
+    }
+
+}
+
+dependencies {
+    dist project(':cicomponents-api')
+    dist project(':cicomponents-common')
+    dist project(':cicomponents-core')
+    dist project(':cicomponents-fs-api')
+    dist project(':cicomponents-fs')
+    dist project(':cicomponents-git-api')
+    dist project(':cicomponents-git')
+
+    compile project(':cicomponents-ci')
+}
+
+
+karaf {
+    features {
+        xsdVersion = '1.3.0'
+        repository "mvn:org.apache.karaf.features/standard/4.0.5/xml/features"
+
+
+        feature {
+            name = 'cicomponents'
+            includeProject = false
+
+            configurations 'dist'
+
+            feature('scr') {
+                version = "4.0.5"
+            }
+
+            feature('war') {
+                version = "4.0.5"
+            }
+
+            feature('jaas') {
+                version = "4.0.5"
+            }
+
+            bundle('com.jcraft:jsch') {
+                wrap = true
+                instruction 'Bundle-SymbolicName', 'com.jcraft.jsch'
+                instruction 'Bundle-Version', '0.1.53'
+            }
+
+            bundle('org.cicomponents:cicomponents-core') {
+                // it is important to register its services
+                // before others to register hooks before service discovery
+                // is performed
+                attribute 'start-level', '30'
+            }
+
+            bundle('org.cicomponents:cicomponents-fs') {
+                // it is important to register its services
+                // before others to register hooks before service discovery
+                // is performed
+                attribute 'start-level', '30'
+            }
+
+            bundle('org.cicomponents:cicomponents-git') {
+                // it is important to register its services
+                // before others to register hooks before service discovery
+                // is performed
+                attribute 'start-level', '40'
+            }
+
+        }
+    }
+
+    kar {}
+}
+
+publishToMavenLocal.dependsOn generateFeatures
+
+task dist(type: Exec) {
+    workingDir "dist"
+    commandLine "mvn", "install", "-Drelease.version=${rootProject.version}"
+}
+
+dist.dependsOn publishToMavenLocal
+allprojects.forEach { dist.dependsOn it.tasks.findByName("publishToMavenLocal") }
