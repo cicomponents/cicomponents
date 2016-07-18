@@ -10,9 +10,10 @@ package org.cicomponents.git;
 import org.cicomponents.Resource;
 import org.cicomponents.fs.File;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 
 public interface GitRevision extends File, Resource {
     Git getRepository();
-    Ref getRef();
+    ObjectId getRef();
 }

@@ -30,9 +30,6 @@ dependencies {
     compile 'org.gradle:gradle-tooling-api:2.13'
     dist    'org.gradle:gradle-tooling-api:2.13'
 
-    compile 'com.google.guava:guava:19.0'
-    dist 'com.google.guava:guava:19.0'
-
 }
 
 

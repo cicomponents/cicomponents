@@ -8,6 +8,7 @@
 package org.cicomponents.git.impl;
 
 import lombok.SneakyThrows;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import org.cicomponents.ResourceHolder;
 import org.cicomponents.common.SimpleResourceHolder;
@@ -15,6 +16,7 @@ import org.cicomponents.fs.WorkingDirectory;
 import org.cicomponents.git.GitRevision;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 
 import java.io.File;
@@ -24,7 +26,7 @@ import java.util.Dictionary;
 @Slf4j
 public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
 
-    private Ref head;
+    private ObjectId head;
     private final String branch;
 
     @SneakyThrows
@@ -38,19 +40,19 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
         synchronized (git) {
             String headRefName = git.getRepository().findRef("refs/heads/" + branch).getObjectId().getName();
             String knownHead = getEnvironment().getPersistentMap().get(headRefName);
-            if (knownHead == null) {
-                RefsChangedEvent event = new RefsChangedEvent();
-                event.setRepository(git.getRepository());
-                getEnvironment().getPersistentMap().put(headRefName, true);
-                git.getRepository().fireEvent(event);
+            if (knownHead != null) {
+                head = ObjectId.fromString(knownHead);
             }
+            RefsChangedEvent event = new RefsChangedEvent();
+            event.setRepository(git.getRepository());
+            git.getRepository().fireEvent(event);
         }
     }
 
     @SneakyThrows
     protected void emitRevisionIfNecessary(RefsChangedEvent event) {
         synchronized (git) {
-            Ref newHead = event.getRepository().findRef("refs/heads/" + branch);
+            ObjectId newHead = event.getRepository().findRef("refs/heads/" + branch).getObjectId();
             if (!newHead.equals(head)) {
                 log.info("Detected refs change for {}, branch {}, old: {}, new: {}", git, branch, head, newHead);
                 WorkingDirectory workingDirectory = getWorkingDirectory();
@@ -65,6 +67,7 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
                 ResourceHolder<GitRevision> holder = new SimpleResourceHolder<>(resource);
                 emit(holder);
                 head = newHead;
+                getEnvironment().getPersistentMap().put(head.getName(), head.getName());
             }
         }
     }

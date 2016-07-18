@@ -15,6 +15,7 @@ import org.cicomponents.fs.WorkingDirectory;
 import org.cicomponents.git.GitRevision;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.events.RefsChangedEvent;
+import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
 
 import java.io.File;
@@ -62,13 +63,13 @@ public abstract class AbstractLocalGitMonitor extends AbstractGitMonitor {
     protected static class LocalGitRevision implements GitRevision {
 
         private final Git clone;
-        private final Ref head;
+        private final ObjectId objectId;
         private final WorkingDirectory workingDirectory;
         private AtomicInteger counter;
 
-        public LocalGitRevision(Git clone, Ref head, WorkingDirectory workingDirectory) {
+        public LocalGitRevision(Git clone, ObjectId objectId, WorkingDirectory workingDirectory) {
             this.clone = clone;
-            this.head = head;
+            this.objectId = objectId;
             this.workingDirectory = workingDirectory;
             counter = new AtomicInteger(0);
         }
@@ -86,8 +87,8 @@ public abstract class AbstractLocalGitMonitor extends AbstractGitMonitor {
             return clone.getRepository().getDirectory().getPath();
         }
 
-        @Override public Ref getRef() {
-            return head;
+        @Override public ObjectId getRef() {
+            return objectId;
         }
 
         @Synchronized("counter")

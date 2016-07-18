@@ -9,25 +9,27 @@ package org.cicomponents.core;
 
 import lombok.extern.slf4j.Slf4j;
 import org.cicomponents.PersistentMap;
+import org.cicomponents.PersistentMapImplementation;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ServiceScope;
 
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@Component
+@Component(scope = ServiceScope.SINGLETON)
 public class PersistentMapImpl implements PersistentMap {
 
-    private final Map<String, Object> map = new HashMap<>();
+    @Reference
+    protected volatile PersistentMapImplementation map;
 
     @Override public <T extends Serializable> void put(String key, T value) {
         map.put(key, value);
     }
 
     @Override public <T extends Serializable> T get(String key) {
-        @SuppressWarnings("unchecked")
-        T value = (T) map.get(key);
-        return value;
+        return map.get(key);
     }
 }
