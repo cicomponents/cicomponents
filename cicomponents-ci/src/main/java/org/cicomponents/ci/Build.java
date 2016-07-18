@@ -19,17 +19,46 @@ import org.osgi.service.component.annotations.*;
 import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * This is a CI Components build orchestration service.
+ *
+ * This service implements {@link ResourceListener} for {@link GitRevision} to receive Git-related events.
+ */
 @Slf4j
 @Component(immediate = true, configurationPolicy = ConfigurationPolicy.REQUIRE, scope = ServiceScope.SINGLETON)
 public class Build implements ResourceListener<GitRevision> {
-    @Reference(policy = ReferencePolicy.STATIC)
+
+    /**
+     * Reference to a master branch version emitter. Relies on cicomponents-git's <code>GitEmitterProvider</code>
+     * which implements {@link org.osgi.framework.hooks.service.FindHook} to listen for filter inquieries.
+     *
+     * To configure it, run this in the console:
+     *
+     * <pre>
+     * config:edit org.cicomponents.ci.Build
+     * config:property-set master.target "(&(type=latest)(repository=https://github.com/cicomponents/cicomponents)(branch=master))"
+     * config:update
+     * </pre>
+     *
+     * Or edit etc/org.cicomponents.ci.Build.cfg:
+     *
+     * <pre>
+     * master.target = (&(type=latest)(repository=https://github.com/cicomponents/cicomponents)(branch=master))
+     * </pre>
+     *
+     */
+    @Reference
     protected volatile GitRevisionEmitter master;
 
+    /**
+     * This service is used to create outputs
+     */
     @Reference
     protected volatile OutputProviderService outputProviderService;
 
     @Activate
     protected void activate() {
+        // Become an active listener
         master.addResourceListener(this);
     }
 
@@ -38,6 +67,12 @@ public class Build implements ResourceListener<GitRevision> {
         master.removeResourceListener(this);
     }
 
+    /**
+     * This method is invoked when a new {@link GitRevision} has been emitted.
+     *
+     * @param holder
+     * @param emitter Right now we don't check the emitter because there's only one for now.
+     */
     @Override
     @SneakyThrows
     public void onEmittedResource(ResourceHolder<GitRevision> holder, ResourceEmitter<GitRevision> emitter) {
@@ -56,7 +91,7 @@ public class Build implements ResourceListener<GitRevision> {
                 BuildLauncher buildLauncher =
                         connection
                                 .newBuild()
-                                .forTasks("dist")
+                                .forTasks("check", "dist")
                                 .setStandardOutput(standardOutput)
                                 .setStandardError(standardError);
 
