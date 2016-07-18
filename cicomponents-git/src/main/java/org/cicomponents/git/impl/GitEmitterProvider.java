@@ -51,23 +51,30 @@ public class GitEmitterProvider implements FindHook {
                         // need to register new service
                         String repository = getAttribute(filterNode, "repository");
                         if (repository != null) {
-                            Dictionary<String, String> properties = new Hashtable<>();
-                            properties.put("type", type);
-                            properties.put("repository", repository);
-                            String branch = getAttribute(filterNode, "branch");
-                            properties.put("branch", branch == null ? "master" : branch);
-                            @SuppressWarnings("unchecked")
-                            Class<GitRevisionEmitter> emitterClass = (Class<GitRevisionEmitter>) entry.getValue();
+                            Thread thread = new Thread() {
+                                @Override public void run() {
+                                    Dictionary<String, String> properties = new Hashtable<>();
+                                    properties.put("type", type);
+                                    properties.put("repository", repository);
+                                    String branch = getAttribute(filterNode, "branch");
+                                    properties.put("branch", branch == null ? "master" : branch);
+                                    @SuppressWarnings("unchecked")
+                                    Class<GitRevisionEmitter> emitterClass = (Class<GitRevisionEmitter>) entry
+                                            .getValue();
 
-                            try {
-                                GitRevisionEmitter emitter = instantiators.get(emitterClass).apply(environment,
-                                                                                                   properties);
-                                context.getBundleContext()
-                                       .registerService(GitRevisionEmitter.class, emitter, properties);
-                            } catch (Exception e) {
-                                log.error("Error while registering {}", emitterClass);
-                                log.error("Error: ", e);
-                            }
+                                    try {
+                                        GitRevisionEmitter emitter = instantiators.get(emitterClass).apply(environment,
+                                                                                                           properties);
+                                        context.getBundleContext()
+                                               .registerService(GitRevisionEmitter.class, emitter, properties);
+                                    } catch (Exception e) {
+                                        log.error("Error while registering {}", emitterClass);
+                                        log.error("Error: ", e);
+                                    }
+                                }
+                            };
+                            thread.setName(repository);
+                            thread.start();
                         } else {
                             log.info("Can't find `repository` in GitRepositoryEmitter filter {}", filter);
                         }
