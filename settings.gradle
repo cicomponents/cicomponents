@@ -8,6 +8,9 @@ include 'cicomponents-fs'
 include 'cicomponents-git-api'
 include 'cicomponents-git'
 
+include 'cicomponents-github-api'
+include 'cicomponents-github'
+
 include 'cicomponents-ci' // self-hosted CI
 
 rootProject.name = 'cicomponents'

@@ -26,10 +26,12 @@ configurations {
 dependencies {
     compile project(':cicomponents-api')
     compile project(':cicomponents-git-api')
+    compile project(':cicomponents-github-api')
 
     compile 'org.gradle:gradle-tooling-api:2.13'
     dist    'org.gradle:gradle-tooling-api:2.13'
 
+    compile 'javax.servlet:javax.servlet-api:3.1.0'
 }
 
 

@@ -2,7 +2,6 @@ dependencies {
     compile project(':cicomponents-git-api')
     compile project(':cicomponents-common')
 
-    compile 'org.apache.directory.shared:shared-ldap-model:1.0.0-M13'
 }
 
 jar {
