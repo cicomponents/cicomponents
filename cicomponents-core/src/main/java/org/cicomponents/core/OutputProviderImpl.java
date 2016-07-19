@@ -5,7 +5,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.cicomponents.common;
+package org.cicomponents.core;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -16,8 +16,6 @@ import org.cicomponents.OutputProvider;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 

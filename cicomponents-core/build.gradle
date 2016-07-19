@@ -1,3 +1,15 @@
 dependencies {
     compile project(':cicomponents-api')
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.core:4.0.5'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.commands:4.0.5'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.console:4.0.5'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.table:4.0.5'
+    compile 'org.apache.karaf.config:org.apache.karaf.config.core:4.0.5'
+}
+
+
+jar {
+    manifest {
+        instruction 'Karaf-Commands', '*'
+    }
 }

@@ -5,14 +5,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.cicomponents.common.command;
+package org.cicomponents.core.command;
 
 import org.apache.karaf.shell.api.action.Action;
 import org.apache.karaf.shell.api.action.Argument;
 import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.cicomponents.OutputProvider;
-import org.cicomponents.common.OutputProviderRegistry;
+import org.cicomponents.OutputProviderRegistry;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceReference;

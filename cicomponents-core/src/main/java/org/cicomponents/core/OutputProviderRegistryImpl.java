@@ -5,10 +5,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.cicomponents.common;
+package org.cicomponents.core;
 
 import lombok.Getter;
 import org.cicomponents.OutputProvider;
+import org.cicomponents.OutputProviderRegistry;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ServiceScope;
 
