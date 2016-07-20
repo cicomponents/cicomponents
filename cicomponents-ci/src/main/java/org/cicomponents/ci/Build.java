@@ -58,8 +58,6 @@ public class Build {
     /**
      * Reference to a pull request version emitter.
      *
-     * "(&(type=github-pr)(repository=https://github.com/yourfork/cicomponents))"
-     *
      */
     @Reference(target = "(github-repository=cicomponents/cicomponents)")
     protected GithubPullRequestEmitter pullRequests;
