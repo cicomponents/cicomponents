@@ -7,8 +7,10 @@
  */
 package org.cicomponents;
 
-import java.io.Serializable;
+import org.osgi.framework.Bundle;
+
 import java.util.Map;
 
-public interface PersistentMap extends Map<String, Serializable> {
+public interface PersistentMap {
+    <T> Map<String, T> getMapForBundle(Bundle bundle);
 }
