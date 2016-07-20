@@ -92,7 +92,7 @@ public abstract class AbstractLocalGitMonitor extends AbstractGitMonitor {
         }
 
         @Synchronized("counter")
-        @Override public void close() {
+        @Override public void release() {
             if (counter.decrementAndGet() == 0) {
                 log.info("Cleaning up {}", clone);
                 clone.close();
