@@ -88,16 +88,6 @@ public class Build {
         pullRequests.addResourceListener(prListener);
     }
 
-    @Deactivate
-    protected void deactivate() {
-        if (masterListener != null) {
-            master.removeResourceListener(masterListener);
-        }
-        if (prListener != null) {
-            pullRequests.removeResourceListener(prListener);
-        }
-    }
-
     private class Builder implements Supplier<Boolean> {
         private final GitRevision resource;
 
