@@ -121,7 +121,7 @@ public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
     @SneakyThrows
     @Synchronized("registrations")
     protected void addApplicationCredentialsProvider(GithubApplicationCredentialsProvider provider) {
-        ArrayList<OAuth2AccessToken> tokens = persistentMap.get(provider.getClientId());
+        ArrayList<OAuth2AccessToken> tokens = (ArrayList<OAuth2AccessToken>) persistentMap.get(provider.getClientId());
         if (tokens == null) {
             if (pendingProvisioning.contains(provider.getClientId())) {
                 return;
