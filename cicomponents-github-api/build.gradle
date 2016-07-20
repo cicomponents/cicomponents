@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':cicomponents-git-api')
+    compile 'org.kohsuke:github-api:1.76'
+}

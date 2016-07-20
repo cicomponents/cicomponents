@@ -10,6 +10,7 @@ package org.cicomponents.git.impl;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.directory.shared.ldap.model.filter.*;
+import org.cicomponents.common.Filter;
 import org.cicomponents.git.GitRevisionEmitter;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -42,45 +43,51 @@ public class GitEmitterProvider implements FindHook {
                                Collection<ServiceReference<?>> references) {
         if (references.isEmpty()) {
             // possibly need to register new services
-            ExprNode filterNode = FilterParser.parse(filter);
-            String objectClass = getAttribute(filterNode, "objectClass");
+            Filter f = new Filter(filter);
+            String objectClass = f.getAttribute("objectClass");
             if (objectClass.contentEquals(GitRevisionEmitter.class.getName())) {
                 for (Map.Entry<String, Class<? extends GitRevisionEmitter>> entry : emitters.entrySet()) {
-                    String type = getAttribute(filterNode, "type");
+                    String type = f.getAttribute("type");
                     if (type.contentEquals(entry.getKey())) {
                         // need to register new service
-                        String repository = getAttribute(filterNode, "repository");
-                        if (repository != null) {
-                            Thread thread = new Thread() {
-                                @Override public void run() {
-                                    Dictionary<String, String> properties = new Hashtable<>();
-                                    properties.put("type", type);
-                                    properties.put("repository", repository);
-                                    String branch = getAttribute(filterNode, "branch");
-                                    properties.put("branch", branch == null ? "master" : branch);
-                                    @SuppressWarnings("unchecked")
-                                    Class<GitRevisionEmitter> emitterClass = (Class<GitRevisionEmitter>) entry
-                                            .getValue();
-
-                                    try {
-                                        GitRevisionEmitter emitter = instantiators.get(emitterClass).apply(environment,
-                                                                                                           properties);
-                                        context.getBundleContext()
-                                               .registerService(GitRevisionEmitter.class, emitter, properties);
-                                    } catch (Exception e) {
-                                        log.error("Error while registering {}", emitterClass);
-                                        log.error("Error: ", e);
-                                    }
-                                }
-                            };
-                            thread.setName(repository);
-                            thread.start();
-                        } else {
-                            log.info("Can't find `repository` in GitRepositoryEmitter filter {}", filter);
-                        }
+                        registerService(filter, f, entry, type);
                     }
                 }
             }
+        }
+    }
+
+    private void registerService(String filter, final Filter f,
+                                 final Map.Entry<String, Class<? extends GitRevisionEmitter>> entry,
+                                 final String type) {
+        String repository = f.getAttribute("repository");
+        if (repository != null) {
+            Thread thread = new Thread() {
+                @Override public void run() {
+                    Dictionary<String, String> properties = new Hashtable<>();
+                    properties.put("type", type);
+                    properties.put("repository", repository);
+                    String branch = f.getAttribute("branch");
+                    properties.put("branch", branch == null ? "master" : branch);
+                    @SuppressWarnings("unchecked")
+                    Class<GitRevisionEmitter> emitterClass = (Class<GitRevisionEmitter>) entry
+                            .getValue();
+
+                    try {
+                        GitRevisionEmitter emitter = instantiators.get(emitterClass).apply(environment,
+                                                                                           properties);
+                        context.getBundleContext()
+                               .registerService(GitRevisionEmitter.class, emitter, properties);
+                    } catch (Exception e) {
+                        log.error("Error while registering {}", emitterClass);
+                        log.error("Error: ", e);
+                    }
+                }
+            };
+            thread.setName(repository);
+            thread.start();
+        } else {
+            log.info("Can't find `repository` in GitRepositoryEmitter filter {}", filter);
         }
     }
 
@@ -94,28 +101,6 @@ public class GitEmitterProvider implements FindHook {
         instantiators.put(LatestRevisionGitBranchMonitor.class, LatestRevisionGitBranchMonitor::new);
     }
 
-    private String getAttribute(ExprNode node, String name) {
-        if (node instanceof NotNode) {
-            return null;
-        }
-        if (node instanceof OrNode || node instanceof AndNode) {
-            BranchNode branch = (BranchNode) node;
-            for (ExprNode child : branch.getChildren()) {
-                String value = getAttribute(child, name);
-                if (value != null) {
-                    return value;
-                }
-            }
-        }
-        if (node instanceof EqualityNode) {
-            @SuppressWarnings("unchecked")
-            EqualityNode<String> equalityNode = (EqualityNode<String>) node;
-            if (equalityNode.getAttribute().contentEquals(name)) {
-                String value = equalityNode.getValue().getString();
-                return value;
-            }
-        }
-        return null;
-    }
+
 
 }

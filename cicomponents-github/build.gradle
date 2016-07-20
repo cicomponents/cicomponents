@@ -1,0 +1,31 @@
+repositories {
+    jcenter() // jenkins doesn't live on mavenCentral
+}
+
+dependencies {
+    compile project(':cicomponents-git-api')
+    compile project(':cicomponents-github-api')
+    compile project(':cicomponents-common')
+
+    compile 'org.kohsuke:github-api:1.76'
+    compile 'javax.servlet:javax.servlet-api:3.1.0'
+
+    compile 'com.github.scribejava:scribejava-apis:2.8.1'
+    compile 'com.ning:async-http-client:1.9.38'
+    compile 'org.asynchttpclient:async-http-client:2.0.4'
+
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.core:4.0.5'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.commands:4.0.5'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.console:4.0.5'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.table:4.0.5'
+    compile 'org.apache.karaf.config:org.apache.karaf.config.core:4.0.5'
+}
+
+
+jar {
+    manifest {
+        instruction 'Karaf-Commands', '*'
+        instruction 'Provide-Capability',
+                'osgi.service;objectClass:List<String>="org.cicomponents.github.GithubOAuthTokenProvider,org.cicomponents.github.GithubPullRequestEmitter"'
+    }
+}

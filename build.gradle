@@ -4,7 +4,7 @@ buildscript {
     }
     dependencies {
         classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:3.1.0'
-        classpath "gradle.plugin.com.github.lburgazzoli:gradle-karaf-plugin:0.0.31"
+        classpath "gradle.plugin.com.github.lburgazzoli:gradle-karaf-plugin:0.0.32"
     }
 }
 
@@ -142,6 +142,8 @@ dependencies {
     dist project(':cicomponents-fs')
     dist project(':cicomponents-git-api')
     dist project(':cicomponents-git')
+    dist project(':cicomponents-github-api')
+    dist project(':cicomponents-github')
 
     compile project(':cicomponents-ci')
 }
@@ -192,6 +194,13 @@ karaf {
             }
 
             bundle('org.cicomponents:cicomponents-git') {
+                // it is important to register its services
+                // before others to register hooks before service discovery
+                // is performed
+                attribute 'start-level', '40'
+            }
+
+            bundle('org.cicomponents:cicomponents-github') {
                 // it is important to register its services
                 // before others to register hooks before service discovery
                 // is performed
