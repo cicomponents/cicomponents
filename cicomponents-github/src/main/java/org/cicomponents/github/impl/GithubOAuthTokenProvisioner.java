@@ -54,7 +54,7 @@ public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
         providers.forEach(new Consumer<OAuthTokenProvider>() {
             @SneakyThrows
             @Override public void accept(OAuthTokenProvider p) {
-                p.setAccessToken(p.getService().getAccessToken(code));
+                p.setToken(p.getService().getAccessToken(code));
             }
         });
         ArrayList<String> tokens = new ArrayList<>(
@@ -93,7 +93,7 @@ public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
         private final String repository;
 
         @Getter @Setter
-        private OAuth2AccessToken accessToken;
+        private OAuth2AccessToken token;
 
         private OAuthTokenProvider(GithubApplicationCredentialsProvider credentialsProvider,
                                    OAuth20Service oAuth20Service,
@@ -104,16 +104,16 @@ public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
         }
 
         private OAuthTokenProvider(GithubApplicationCredentialsProvider credentialsProvider,
-                                   OAuth2AccessToken accessToken,
+                                   OAuth2AccessToken token,
                                    String repository) {
             this.credentialsProvider = credentialsProvider;
-            this.accessToken = accessToken;
+            this.token = token;
             this.repository = repository;
         }
 
         @SneakyThrows
         public String getAccessToken() {
-            return accessToken.getAccessToken();
+            return token.getAccessToken();
         }
     }
 
@@ -121,7 +121,7 @@ public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
     @SneakyThrows
     @Synchronized("registrations")
     protected void addApplicationCredentialsProvider(GithubApplicationCredentialsProvider provider) {
-        ArrayList<OAuth2AccessToken> tokens = (ArrayList<OAuth2AccessToken>) persistentMap.get(provider.getClientId());
+        ArrayList<String> tokens = (ArrayList<String>) persistentMap.get(provider.getClientId());
         if (tokens == null) {
             if (pendingProvisioning.contains(provider.getClientId())) {
                 return;
@@ -153,7 +153,7 @@ public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
             List<OAuthTokenProvider> providers = IntStream.range(0, provider.getRepositories().size())
                                                         .mapToObj(i ->
                                                                           new OAuthTokenProvider(provider,
-                                                                                                 tokens.get(i),
+                                                                                                 new OAuth2AccessToken(tokens.get(i)),
                                                                                                  provider.getRepositories()
                                                                                                          .get(i)))
                                                         .collect(Collectors.toList());
