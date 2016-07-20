@@ -9,5 +9,8 @@ package org.cicomponents;
 
 public interface Resource extends AutoCloseable {
     default void acquire() {}
-    default void close() {}
+    default void release() {}
+    default void close() {
+        release();
+    }
 }

@@ -33,7 +33,7 @@ public class WorkingDirectoryProviderImpl implements WorkingDirectoryProvider {
             }
 
             @SneakyThrows
-            @Override public void close() {
+            @Override public void release() {
                 log.info("Removing working directory {}", path);
                 Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
                     @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)

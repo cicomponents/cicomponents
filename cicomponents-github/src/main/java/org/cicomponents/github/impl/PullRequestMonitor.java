@@ -177,7 +177,7 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
         }
 
         @Synchronized("counter")
-        @Override public void close() {
+        @Override public void release() {
             if (counter.decrementAndGet() == 0) {
                 log.info("Cleaning up {}", git);
                 git.close();
