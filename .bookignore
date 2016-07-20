@@ -1,0 +1,7 @@
+*.java
+*.class
+build.gradle
+dist/*
+**/build/*
+**/src/main/java/*
+**/src/main/test/*
