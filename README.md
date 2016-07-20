@@ -16,8 +16,9 @@ This is a very early version, expect major changes until 1.0 is released.
 This list is intended to grow over time. This is only the beginning.
 
 * `OutputProvider` and `OutputProviderService` to stream and watch timestamped stdour/stderr
-* `LatestRevisionGitBranchMonitor` to monitor changes in a git repository
 * `PersistentMap` to store simple key/value pairs on disk to remember the state between shutdowns
+* `LatestRevisionGitBranchMonitor` to monitor changes in a git repository
+* `GithubPullRequestEmitter` to watch for GitHub Pull Requests
 
 ## Usage
 
