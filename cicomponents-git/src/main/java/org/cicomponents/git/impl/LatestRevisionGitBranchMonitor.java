@@ -18,14 +18,17 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.events.RefsChangedEvent;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.Ref;
+import org.osgi.framework.FrameworkUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Dictionary;
+import java.util.Map;
 
 @Slf4j
 public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
 
+    private final Map<String, Object> persistentMap;
     private ObjectId head;
     private final String branch;
 
@@ -33,13 +36,15 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
     public LatestRevisionGitBranchMonitor(Environment environment, Dictionary<String, ?> dictionary) {
         super(environment, dictionary);
         branch = (String) dictionary.get("branch");
+        persistentMap = environment.getPersistentMap().getMapForBundle(
+                FrameworkUtil.getBundle(LatestRevisionGitBranchMonitor.class));
         checkLatest();
     }
 
     private void checkLatest() throws IOException {
         synchronized (git) {
             String headRefName = git.getRepository().findRef("refs/heads/" + branch).getObjectId().getName();
-            String knownHead = (String) getEnvironment().getPersistentMap().get(headRefName);
+            String knownHead = (String) persistentMap.get(headRefName);
             if (knownHead != null) {
                 head = ObjectId.fromString(knownHead);
             }
@@ -67,7 +72,7 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
                 ResourceHolder<GitRevision> holder = new SimpleResourceHolder<>(resource);
                 emit(holder);
                 head = newHead;
-                getEnvironment().getPersistentMap().put(head.getName(), head.getName());
+                persistentMap.put(head.getName(), head.getName());
             }
         }
     }

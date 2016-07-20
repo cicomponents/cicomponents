@@ -5,6 +5,8 @@ dependencies {
     compile 'org.apache.karaf.shell:org.apache.karaf.shell.console:4.0.5'
     compile 'org.apache.karaf.shell:org.apache.karaf.shell.table:4.0.5'
     compile 'org.apache.karaf.config:org.apache.karaf.config.core:4.0.5'
+
+    compile 'com.esotericsoftware:kryo:4.0.0'
 }
 
 

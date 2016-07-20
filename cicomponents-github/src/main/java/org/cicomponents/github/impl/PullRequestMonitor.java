@@ -44,12 +44,14 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
     @Getter
     private final String repository;
     private final Environment environment;
+    private final Map<String, Object> persistentMap;
 
     private volatile GithubOAuthTokenProvider tokenProvider;
     private final ServiceTracker<GithubOAuthTokenProvider, Boolean> serviceTracker;
 
     public PullRequestMonitor(Environment environment, Dictionary<String, ?> dictionary) {
         this.environment = environment;
+        persistentMap = environment.getPersistentMap().getMapForBundle(FrameworkUtil.getBundle(PullRequestMonitor.class));
         context = FrameworkUtil.getBundle(PullRequestMonitor.class).getBundleContext();
         repository = (String) dictionary.get("github-repository");
 
@@ -93,8 +95,7 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
     }
 
     private void checkPullRequest(GHPullRequest pr) {
-        Object o = environment.getPersistentMap()
-                          .get(getIssueStatusKey(pr));
+        Object o = persistentMap.get(getIssueStatusKey(pr));
         if (o == null) { // no status available for it
             log.info("No status available for {}#{}-{}", repository,
                      pr.getNumber(), pr.getHead().getSha());
@@ -130,8 +131,7 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
         log.info("Emitting fork {}#{}", name, pr.getHead().getSha());
 
         GithubPullRequest pullRequest = new GithubPullRequestResource(git, pr, directory);
-        environment.getPersistentMap()
-                   .put(getIssueStatusKey(pr), new Date());
+        persistentMap.put(getIssueStatusKey(pr), new Date());
         emit(new SimpleResourceHolder<>(pullRequest));
     }
 

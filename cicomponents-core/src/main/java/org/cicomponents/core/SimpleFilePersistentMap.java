@@ -7,10 +7,14 @@
  */
 package org.cicomponents.core;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import lombok.SneakyThrows;
-
 import lombok.extern.slf4j.Slf4j;
 import org.cicomponents.PersistentMapImplementation;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.wiring.BundleWiring;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.ServiceScope;
 
@@ -27,111 +31,121 @@ import java.util.stream.Collectors;
 @Component(property = "type=simplefile", scope = ServiceScope.SINGLETON)
 public class SimpleFilePersistentMap implements PersistentMapImplementation {
 
-    private final File file;
-
-    @SneakyThrows
-    public SimpleFilePersistentMap() {
-        file = new File(Paths.get("").toAbsolutePath().toString() + "/data/simplefile");
-        boolean mkdirs = file.mkdirs();
-        log.info("Creating a persistent map at {}, created: {}", file, mkdirs);
-        assert mkdirs;
+    @Override public <T> Map<String, T> getMapForBundle(Bundle bundle) {
+        return new Backend<>(bundle);
     }
 
-    @Override public int size() {
-        return file.listFiles().length;
-    }
+    private final class Backend<T> implements Map<String, T> {
+        private final File file;
+        private final Kryo kryo;
 
-    @Override public boolean isEmpty() {
-        return size() == 0;
-    }
-
-    @Override public boolean containsKey(Object key) {
-        File file = new File(this.file + "/" + key);
-        return file.exists();
-    }
-
-    @Override public boolean containsValue(Object value) {
-        return values().contains(value);
-    }
-
-    @SneakyThrows
-    @Override public Serializable get(Object key) {
-        File file = new File(this.file + "/" + key);
-        if (!file.exists()) {
-            return null;
+        @SneakyThrows
+        public Backend(Bundle bundle) {
+            kryo = new Kryo();
+            kryo.setClassLoader(bundle.adapt(BundleWiring.class).getClassLoader());
+            file = new File(Paths.get("").toAbsolutePath().toString() + "/data/simplefile/" + bundle.getBundleId());
+            boolean mkdirs = file.mkdirs();
+            log.info("Creating a persistent map at {}, created: {}", file, mkdirs);
+            assert mkdirs;
         }
-        FileInputStream stream = new FileInputStream(file);
-        return (Serializable) new ObjectInputStream(stream).readObject();
-    }
 
-    @SneakyThrows
-    @Override public Serializable put(String key, Serializable value) {
-                File file = new File(this.file + "/" + key);
-        FileOutputStream stream = new FileOutputStream(file);
-        new ObjectOutputStream(stream).writeObject(value);
-        stream.close();
-        return value;
-    }
+        @Override public int size() {
+            return file.listFiles().length;
+        }
 
-    @Override public Serializable remove(Object key) {
-        Serializable result = get(key);
-        File file = new File(this.file + "/" + key);
-        file.delete();
-        return result;
-    }
+        @Override public boolean isEmpty() {
+            return size() == 0;
+        }
 
-    @Override public void putAll(Map<? extends String, ? extends Serializable> m) {
-        m.forEach(this::put);
-    }
+        @Override public boolean containsKey(Object key) {
+            File file = new File(this.file + "/" + key);
+            return file.exists();
+        }
 
-    @SneakyThrows
-    @Override public void clear() {
-        Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
-            @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
-                    throws IOException {
-                Files.delete(file);
-                return FileVisitResult.CONTINUE;
+        @Override public boolean containsValue(Object value) {
+            return values().contains(value);
+        }
+
+        @SneakyThrows
+        @Override public T get(Object key) {
+            File file = new File(this.file + "/" + key);
+            if (!file.exists()) {
+                return null;
             }
+            FileInputStream stream = new FileInputStream(file);
+            return (T) kryo.readClassAndObject(new Input(stream));
+        }
 
-            @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
-                Files.delete(dir);
-                return FileVisitResult.CONTINUE;
-            }
-        });
-        file.mkdirs();
-    }
+        @SneakyThrows
+        @Override public T put(String key, T value) {
+            File file = new File(this.file + "/" + key);
+            FileOutputStream stream = new FileOutputStream(file);
+            Output output = new Output(stream);
+            kryo.writeClassAndObject(output, value);
+            output.close();
+            return value;
+        }
 
-    @Override public Set<String> keySet() {
-        return Arrays.stream(file.listFiles()).map(File::getName).collect(Collectors.toSet());
-    }
+        @Override public T remove(Object key) {
+            T result = get(key);
+            File file = new File(this.file + "/" + key);
+            file.delete();
+            return result;
+        }
 
-    @Override public Collection<Serializable> values() {
-        return entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
-    }
+        @Override public void putAll(Map<? extends String, ? extends T> m) {
+            m.forEach(this::put);
+        }
 
-    @Override public Set<Entry<String, Serializable>> entrySet() {
-        return Arrays.stream(file.listFiles())
-                     .map(file -> new Entry<String, Serializable>() {
-                         @Override public String getKey() {
-                             return file.getName();
-                         }
+        @SneakyThrows
+        @Override public void clear() {
+            Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult visitFile(Path file, BasicFileAttributes attrs)
+                        throws IOException {
+                    Files.delete(file);
+                    return FileVisitResult.CONTINUE;
+                }
 
-                         @Override public Serializable getValue() {
-                             return get(getKey());
-                         }
+                @Override public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    Files.delete(dir);
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            file.mkdirs();
+        }
 
-                         @Override public Serializable setValue(Serializable value) {
-                             return put(getKey(), value);
-                         }
+        @Override public Set<String> keySet() {
+            return Arrays.stream(file.listFiles()).map(File::getName).collect(Collectors.toSet());
+        }
 
-                         @Override public boolean equals(Object o) {
-                             return get(getKey()).equals(o);
-                         }
+        @Override public Collection<T> values() {
+            return entrySet().stream().map(Map.Entry::getValue).collect(Collectors.toList());
+        }
 
-                         @Override public int hashCode() {
-                             return getKey().hashCode();
-                         }
-                     }).collect(Collectors.toSet());
+        @Override public Set<Entry<String, T>> entrySet() {
+            return Arrays.stream(file.listFiles())
+                         .map(file -> new Entry<String, T>() {
+                             @Override public String getKey() {
+                                 return file.getName();
+                             }
+
+                             @Override public T getValue() {
+                                 return get(getKey());
+                             }
+
+                             @Override public T setValue(T value) {
+                                 return put(getKey(), value);
+                             }
+
+                             @Override public boolean equals(Object o) {
+                                 return get(getKey()).equals(o);
+                             }
+
+                             @Override public int hashCode() {
+                                 return getKey().hashCode();
+                             }
+                         }).collect(Collectors.toSet());
+        }
     }
 
 }
