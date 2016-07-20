@@ -28,10 +28,7 @@ import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -130,14 +127,17 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
                      .setDirectory(new File(path)).call();
 
         git.checkout().setName(pr.getHead().getSha()).call();
+        log.info("Emitting fork {}#{}", name, pr.getHead().getSha());
 
         GithubPullRequest pullRequest = new GithubPullRequestResource(git, pr, directory);
+        environment.getPersistentMap()
+                   .put(getIssueStatusKey(pr), new Date());
         emit(new SimpleResourceHolder<>(pullRequest));
     }
 
     private String getIssueStatusKey(GHPullRequest pr) {
-        return "github-pr-status/" +
-                     repository + "#" + pr.getNumber() + "/" +
+        return "github-pr-status-" +
+                     repository.replaceAll("/", "-") + "-" + pr.getNumber() + "-" +
                      pr.getHead().getSha();
     }
 
