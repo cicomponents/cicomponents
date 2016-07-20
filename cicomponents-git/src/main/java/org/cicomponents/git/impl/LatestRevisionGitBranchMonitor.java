@@ -39,7 +39,7 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
     private void checkLatest() throws IOException {
         synchronized (git) {
             String headRefName = git.getRepository().findRef("refs/heads/" + branch).getObjectId().getName();
-            String knownHead = getEnvironment().getPersistentMap().get(headRefName);
+            String knownHead = (String) getEnvironment().getPersistentMap().get(headRefName);
             if (knownHead != null) {
                 head = ObjectId.fromString(knownHead);
             }

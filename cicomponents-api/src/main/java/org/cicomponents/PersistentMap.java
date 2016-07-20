@@ -8,8 +8,7 @@
 package org.cicomponents;
 
 import java.io.Serializable;
+import java.util.Map;
 
-public interface PersistentMap {
-    <T extends Serializable> void put(String key, T value);
-    <T extends Serializable> T get(String key);
+public interface PersistentMap extends Map<String, Serializable> {
 }
