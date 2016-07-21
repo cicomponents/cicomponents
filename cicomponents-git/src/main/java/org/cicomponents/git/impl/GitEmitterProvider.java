@@ -9,91 +9,98 @@ package org.cicomponents.git.impl;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.directory.shared.ldap.model.filter.*;
-import org.cicomponents.common.Filter;
+import org.cicomponents.ResourceListener;
+import org.cicomponents.git.GitRevision;
 import org.cicomponents.git.GitRevisionEmitter;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.*;
 
 import java.util.*;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 
-@Component(immediate = true)
+@Component(immediate = true, scope = ServiceScope.SINGLETON)
 @Slf4j
-public class GitEmitterProvider implements FindHook {
-
-    private ComponentContext context;
+public class GitEmitterProvider {
 
     @Reference
-    protected volatile Environment environment;
+    protected Environment environment;
 
-    @Activate
-    protected void activate(ComponentContext context) {
-        this.context = context;
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
+    protected Collection<Map.Entry<Map<String, Object>, ResourceListener<GitRevision>>> listeners;
+
+    @SneakyThrows
+    private void forEachService(ComponentContext context, Consumer<GitRevisionEmitter> consumer) {
+        Collection<ServiceReference<GitRevisionEmitter>> references =
+                context.getBundleContext().getServiceReferences(GitRevisionEmitter.class,
+                                                                "(objectClass=" + GitRevisionEmitter.class.getName() + ")");
+        for (ServiceReference<GitRevisionEmitter> reference : references) {
+            GitRevisionEmitter service = context.getBundleContext().getService(reference);
+            consumer.accept(service);
+            context.getBundleContext().ungetService(reference);
+        }
     }
 
     @SneakyThrows
-    @Override public void find(BundleContext bundleContext, String name,
-                               String filter, boolean allServices,
-                               Collection<ServiceReference<?>> references) {
-        if (references.isEmpty()) {
-            // possibly need to register new services
-            Filter f = new Filter(filter);
-            String objectClass = f.getAttribute("objectClass");
-            if (objectClass.contentEquals(GitRevisionEmitter.class.getName())) {
-                for (Map.Entry<String, Class<? extends GitRevisionEmitter>> entry : emitters.entrySet()) {
-                    String type = f.getAttribute("type");
-                    if (type.contentEquals(entry.getKey())) {
-                        // need to register new service
-                        registerService(filter, f, entry, type);
+    @Activate
+    protected void activate(ComponentContext context) {
+        log.info("Activating with {} potential listener(s)", listeners.size());
+        forEachService(context, (emitter) -> {
+            if (emitter instanceof AbstractGitMonitor) {
+                ((AbstractGitMonitor) emitter).pause();
+            }
+        });
+        for (Map.Entry<Map<String, Object>, ResourceListener<GitRevision>> listener : listeners) {
+            if (listener.getValue().isMatchingListener(GitRevision.class)) {
+                Map<String, Object> props = listener.getKey();
+                String filter = getEmitterFilter(props);
+                Collection<ServiceReference<GitRevisionEmitter>> references =
+                        context.getBundleContext().getServiceReferences(GitRevisionEmitter.class, filter);
+                if (!references.isEmpty()) {
+                    log.info("Adding GitRevision listener {} {}" + listener.getValue(), props);
+                    for (ServiceReference<GitRevisionEmitter> reference : references) {
+                        GitRevisionEmitter service = context.getBundleContext().getService(reference);
+                        service.addResourceListener(listener.getValue());
+                        context.getBundleContext().ungetService(reference);
                     }
+                } else {
+                    log.info("Starting GitRevisionEmitter for listener {} {}", listener.getValue(), props);
+                    Dictionary<String, String> properties = new Hashtable<>();
+                    properties.put("type", (String) props.get("type"));
+                    properties.put("repository", (String) props.get("repository"));
+                    String branch = (String) props.get("branch");
+                    properties.put("branch", branch == null ? "master" : branch);
+                    AbstractGitMonitor monitor = instantiators.get(emitters.get(props.get("type")))
+                                                              .apply(environment, properties);
+                    monitor.addResourceListener(listener.getValue());
+                    context.getBundleContext().registerService(GitRevisionEmitter.class, monitor, properties);
                 }
             }
         }
+        forEachService(context, (emitter) -> {
+            if (emitter instanceof AbstractGitMonitor) {
+                ((AbstractGitMonitor) emitter).resume();
+            }
+        });
+        log.info("Activation complete");
     }
 
-    private void registerService(String filter, final Filter f,
-                                 final Map.Entry<String, Class<? extends GitRevisionEmitter>> entry,
-                                 final String type) {
-        String repository = f.getAttribute("repository");
-        if (repository != null) {
-            Thread thread = new Thread() {
-                @Override public void run() {
-                    Dictionary<String, String> properties = new Hashtable<>();
-                    properties.put("type", type);
-                    properties.put("repository", repository);
-                    String branch = f.getAttribute("branch");
-                    properties.put("branch", branch == null ? "master" : branch);
-                    @SuppressWarnings("unchecked")
-                    Class<GitRevisionEmitter> emitterClass = (Class<GitRevisionEmitter>) entry
-                            .getValue();
-
-                    try {
-                        GitRevisionEmitter emitter = instantiators.get(emitterClass).apply(environment,
-                                                                                           properties);
-                        context.getBundleContext()
-                               .registerService(GitRevisionEmitter.class, emitter, properties);
-                    } catch (Exception e) {
-                        log.error("Error while registering {}", emitterClass);
-                        log.error("Error: ", e);
-                    }
-                }
-            };
-            thread.setName(repository);
-            thread.start();
-        } else {
-            log.info("Can't find `repository` in GitRepositoryEmitter filter {}", filter);
+    @Deactivate
+    protected void deactivate(ComponentContext context) {
+        for (Map.Entry<Map<String, Object>, ResourceListener<GitRevision>> listener : listeners) {
+            forEachService(context, emitter -> emitter.removeResourceListener(listener.getValue()));
         }
     }
 
-    private static Map<String, Class<? extends GitRevisionEmitter>> emitters = new HashMap<>();
-    private static Map<Class<? extends GitRevisionEmitter>,
-            BiFunction<Environment, Dictionary<String, ?>, ? extends GitRevisionEmitter>> instantiators =
+    private String getEmitterFilter(Map<String, Object> props) {
+        return "(&(type=" + props.get("type") + ")(repository=" + props.get("repository") + "))";
+    }
+
+
+    private static Map<String, Class<? extends AbstractGitMonitor>> emitters = new HashMap<>();
+    private static Map<Class<? extends AbstractGitMonitor>,
+            BiFunction<Environment, Dictionary<String, ?>, ? extends AbstractGitMonitor>> instantiators =
             new HashMap<>();
 
     static {

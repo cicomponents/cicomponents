@@ -9,77 +9,106 @@ package org.cicomponents.github.impl;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.cicomponents.common.Filter;
+import org.cicomponents.ResourceListener;
+import org.cicomponents.github.GithubPullRequest;
 import org.cicomponents.github.GithubPullRequestEmitter;
-import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.hooks.service.FindHook;
 import org.osgi.service.component.ComponentContext;
-import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.component.annotations.Component;
-import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.*;
 
 import java.util.Collection;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.Map;
+import java.util.function.Consumer;
 
-@Component(immediate = true)
+@Component(immediate = true, scope = ServiceScope.SINGLETON)
 @Slf4j
-public class GithubEmitterProvider implements FindHook {
+public class GithubEmitterProvider {
 
     @Reference
-    protected volatile Environment environment;
+    protected Environment environment;
 
-    private ComponentContext context;
-
-    @Activate
-    protected void activate(ComponentContext context) {
-        this.context = context;
-    }
+    @Reference(policyOption = ReferencePolicyOption.GREEDY)
+    protected Collection<Map.Entry<Map<String, Object>, ResourceListener<GithubPullRequest>>> listeners;
 
     @SneakyThrows
-    @Override public void find(BundleContext bundleContext, String name,
-                               String filter, boolean allServices,
-                               Collection<ServiceReference<?>> references) {
-        if (references.isEmpty()) {
-            // possibly need to register new services
-            Filter f = new Filter(filter);
-            String objectClass = f.getAttribute("objectClass");
-            if (objectClass.contentEquals(GithubPullRequestEmitter.class.getName())) {
-                // need to register new service
-                registerService(filter, f);
-            }
+    private void forEachService(ComponentContext context, Consumer<GithubPullRequestEmitter> consumer) {
+        Collection<ServiceReference<GithubPullRequestEmitter>> references =
+                context.getBundleContext().getServiceReferences(GithubPullRequestEmitter.class,
+                                                                "(objectClass=" + GithubPullRequestEmitter.class.getName() + ")");
+        for (ServiceReference<GithubPullRequestEmitter> reference : references) {
+            GithubPullRequestEmitter service = context.getBundleContext().getService(reference);
+            consumer.accept(service);
+            context.getBundleContext().ungetService(reference);
         }
     }
 
-    private void registerService(String filter, final Filter f) {
-        String repository = f.getAttribute("repository");
-        String githubRepository = f.getAttribute("github-repository");
-        if (repository == null && githubRepository != null) {
-            repository = "https://github.com/" + githubRepository;
-        }
-        if (repository != null) {
-            String finalRepository = repository;
-            Thread thread = new Thread() {
-                @Override public void run() {
-                    Dictionary<String, String> properties = new Hashtable<>();
-                    properties.put("repository", finalRepository);
-                    properties.put("github-repository", normalizeRepository(finalRepository));
-                    try {
-                        GithubPullRequestEmitter emitter = new PullRequestMonitor(environment, properties);
-                        context.getBundleContext()
-                               .registerService(GithubPullRequestEmitter.class, emitter, properties);
-                    } catch (Exception e) {
-                        log.error("Error while registering GithubPullRequestEmitter");
-                        log.error("Error: ", e);
+
+    @SneakyThrows
+    @Activate
+    protected void activate(ComponentContext context) {
+        log.info("Activating with {} potential listener(s)", listeners.size());
+        forEachService(context, (emitter) -> {
+            if (emitter instanceof AbstractGithubPullRequestEmitter) {
+                ((AbstractGithubPullRequestEmitter) emitter).pause();
+            }
+        });
+        for (Map.Entry<Map<String, Object>, ResourceListener<GithubPullRequest>> listener : listeners) {
+            if (listener.getValue().isMatchingListener(GithubPullRequest.class)) {
+                Map<String, Object> props = listener.getKey();
+                String filter = getEmitterFilter(props);
+                Collection<ServiceReference<GithubPullRequestEmitter>> references =
+                        context.getBundleContext().getServiceReferences(GithubPullRequestEmitter.class, filter);
+
+                if (!references.isEmpty()) {
+                    log.info("Adding GithubPullRequest listener {} {}" + listener.getValue(), props);
+                    for (ServiceReference<GithubPullRequestEmitter> reference : references) {
+                        GithubPullRequestEmitter service = context.getBundleContext().getService(reference);
+                        service.addResourceListener(listener.getValue());
+                        context.getBundleContext().ungetService(reference);
                     }
+                } else {
+                    log.info("Starting GithubPullRequest for listener {} {}", listener.getValue(), props);
+                    Dictionary<String, String> properties = new Hashtable<>();
+                    String repository = getRepository(props);
+                    properties.put("repository", repository);
+                    properties.put("github-repository", normalizeRepository(repository));
+                    AbstractGithubPullRequestEmitter emitter = new PullRequestMonitor(environment, properties);
+                    emitter.addResourceListener(listener.getValue());
+                    context.getBundleContext().registerService(GithubPullRequestEmitter.class, emitter, properties);
                 }
-            };
-            thread.setName(repository);
-            thread.start();
-        } else {
-            log.info("Can't find `repository` in GitRepositoryEmitter filter {}", filter);
+            }
         }
+        forEachService(context, (emitter) -> {
+            if (emitter instanceof AbstractGithubPullRequestEmitter) {
+                ((AbstractGithubPullRequestEmitter) emitter).resume();
+            }
+        });
+
+        log.info("Activation complete");
+    }
+
+    @Deactivate
+    protected void deactivate(ComponentContext context) {
+        for (Map.Entry<Map<String, Object>, ResourceListener<GithubPullRequest>> listener : listeners) {
+            forEachService(context, emitter -> emitter.removeResourceListener(listener.getValue()));
+        }
+    }
+
+    private String getEmitterFilter(Map<String, Object> props) {
+        return "(repository=" + getRepository(props) + ")";
+    }
+
+
+    private String getRepository(Map<String, Object> props) {
+        if (props.containsKey("repository")) {
+            return (String) props.get("repository");
+        }
+        if (props.containsKey("github-repository")) {
+            return "https://github.com/" + props.get("github-repository");
+        }
+        throw new IllegalArgumentException("No repository provided in " + props);
     }
 
     private String normalizeRepository(String repository) {

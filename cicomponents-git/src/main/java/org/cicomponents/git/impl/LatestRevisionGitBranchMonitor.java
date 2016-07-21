@@ -32,11 +32,22 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
     private ObjectId head;
     private final String branch;
 
+    private boolean initialized = false;
+
     @SneakyThrows
     public LatestRevisionGitBranchMonitor(Environment environment, Dictionary<String, ?> dictionary) {
         super(environment, dictionary);
         branch = (String) dictionary.get("branch");
         persistentMap = environment.getPersistentMap();
+    }
+
+    @SneakyThrows
+    @Override void resume() {
+        super.resume();
+    }
+
+    @SneakyThrows
+    @Override protected void onGitReady() {
         checkLatest();
     }
 

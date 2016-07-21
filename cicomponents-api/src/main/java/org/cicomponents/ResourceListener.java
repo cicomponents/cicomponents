@@ -7,8 +7,25 @@
  */
 package org.cicomponents;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+
 @FunctionalInterface
 public interface ResourceListener<T extends Resource> {
     void onEmittedResource(ResourceHolder<T> holder,
                            ResourceEmitter<T> emitter);
+
+    default boolean isMatchingListener(Class klass) {
+        for (Type type : getClass().getGenericInterfaces()) {
+            if (type instanceof ParameterizedType &&
+                    ((ParameterizedType) type).getRawType() == ResourceListener.class) {
+                ParameterizedType parameterizedType = (ParameterizedType) type;
+                Type target = parameterizedType.getActualTypeArguments()[0];
+                if (target == klass) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }
