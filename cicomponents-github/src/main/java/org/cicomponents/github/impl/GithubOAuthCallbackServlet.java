@@ -12,12 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.Servlet;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.UUID;
+import java.util.concurrent.ForkJoinPool;
 
 @WebServlet(
         asyncSupported=true,
@@ -32,19 +34,26 @@ public class GithubOAuthCallbackServlet extends HttpServlet implements Servlet {
 
     @SneakyThrows
     @Override protected void doGet(HttpServletRequest req, HttpServletResponse resp) {
-        String error = req.getParameter("error");
+        AsyncContext asyncContext = req.startAsync();
+        ForkJoinPool.commonPool().execute(new Runnable() {
+            @SneakyThrows
+            @Override public void run() {
+                String error = req.getParameter("error");
 
-        if (error != null && error != "") {
-            resp.sendError(500, req.getParameter("error_description"));
-            return;
-        }
-        String code = req.getParameter("code");
-        String state = req.getParameter("state");
-        finalizer.finalizeOAuth(UUID.fromString(state), code);
-        resp.setStatus(200);
-        resp.setContentType("text/html");
-        resp.getWriter().write("<html><body>You have <b>successfully authorized</b> CI Components." +
-                                       "You can close this page now." +
-                                       "<script>window.close();</script></body></html>");
+                if (error != null && error != "") {
+                    resp.sendError(500, req.getParameter("error_description"));
+                    return;
+                }
+                String code = req.getParameter("code");
+                String state = req.getParameter("state");
+                finalizer.finalizeOAuth(UUID.fromString(state), code);
+                resp.setStatus(200);
+                resp.setContentType("text/html");
+                resp.getWriter().write("<html><body>You have <b>successfully authorized</b> CI Components." +
+                                               "You can close this page now." +
+                                               "<script>window.close();</script></body></html>");
+                asyncContext.complete();
+            }
+        });
     }
 }

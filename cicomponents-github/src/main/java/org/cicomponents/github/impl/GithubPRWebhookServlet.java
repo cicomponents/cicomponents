@@ -9,12 +9,14 @@ package org.cicomponents.github.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.cicomponents.github.GithubPullRequestEmitter;
 import org.kohsuke.github.GHEventPayload;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
+import javax.servlet.AsyncContext;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
@@ -25,6 +27,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 
 @WebServlet(
         asyncSupported=true,
@@ -40,25 +43,31 @@ public class GithubPRWebhookServlet extends HttpServlet implements Servlet {
 
     @Override protected void doPost(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
+        AsyncContext asyncContext = req.startAsync();
+        ForkJoinPool.commonPool().execute(new Runnable() {
+            @SneakyThrows
+            @Override public void run() {
+                Map<String, Object> payload = new ObjectMapper().readValue(req.getReader(),
+                                                                           new TypeReference<Map<String, Object>>() {});
 
+                String action = (String) payload.get("action");
+                Integer number = (Integer) payload.get("number");
+                @SuppressWarnings("unchecked")
+                String name = (String) ((Map<String, Object>) payload.get("repository")).get("full_name");
 
-        Map<String, Object> payload = new ObjectMapper().readValue(req.getReader(),
-                                                                   new TypeReference<Map<String, Object>>() {});
+                if (action.contentEquals("synchronize") ||
+                        action.contentEquals("closed") ||
+                        action.contentEquals("opened") ||
+                        action.contentEquals("reopened")) {
 
-        String action = (String) payload.get("action");
-        Integer number = (Integer) payload.get("number");
-        @SuppressWarnings("unchecked")
-        String name = (String) ((Map<String, Object>) payload.get("repository")).get("full_name");
+                    emitters.stream()
+                            .filter(emitter -> emitter.getRepository().contentEquals(name))
+                            .forEach(emitter -> emitter.onPullRequestEvent(number));
 
-        if (action.contentEquals("synchronize") ||
-            action.contentEquals("closed") ||
-            action.contentEquals("opened") ||
-            action.contentEquals("reopened")) {
+                }
 
-            emitters.stream()
-                    .filter(emitter -> emitter.getRepository().contentEquals(name))
-                    .forEach(emitter -> emitter.onPullRequestEvent(number));
-
-        }
+                asyncContext.complete();
+            }
+        });
     }
 }
