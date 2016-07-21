@@ -16,8 +16,18 @@ protected volatile PersistentMap persistentMap;
 This command lists key/value pairs recorded for a bundle:
 
 ```
-ci@cicomponents> map:list 97
+ci@cicomponents> pmap:list
+
+92 - org.cicomponents.git
+
 Key                                      | Value
 -----------------------------------------------------------------------------------
-9e914d735c1bc4405cac9ceb7c4fb1c345ff4629 | 9e914d735c1bc4405cac9ceb7c4fb1c345ff4629
+6d84ab4bc08f1934c28d6b55b328c686337b6057 | 6d84ab4bc08f1934c28d6b55b328c686337b6057
+
+155 - org.cicomponents.ci
+
+Key          | Value
+----------------------
+build-status | passing
+
 ```
