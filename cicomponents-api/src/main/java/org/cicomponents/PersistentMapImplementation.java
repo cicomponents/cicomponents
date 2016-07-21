@@ -7,11 +7,16 @@
  */
 package org.cicomponents;
 
+import org.osgi.framework.Bundle;
+
+import java.util.Map;
+
 /**
  * PersistentMapImplementation, unlike {@link PersistentMap} is the
  * interface to be implemented by actual implementation of a persistence
- * map so that they can be easily swapped in the singleton {@link PersistentMap} service
+ * map so that they can be easily swapped in the {@link PersistentMap} service
  * implementation.
  */
-public interface PersistentMapImplementation extends PersistentMap {
+public interface PersistentMapImplementation  {
+    <T> Map<String, T> getMapForBundle(Bundle bundle);
 }

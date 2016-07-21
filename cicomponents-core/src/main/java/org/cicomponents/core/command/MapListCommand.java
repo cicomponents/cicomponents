@@ -13,6 +13,7 @@ import org.apache.karaf.shell.api.action.Command;
 import org.apache.karaf.shell.api.action.lifecycle.Service;
 import org.apache.karaf.shell.table.ShellTable;
 import org.cicomponents.PersistentMap;
+import org.cicomponents.core.PersistentMapImpl;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.FrameworkUtil;
@@ -32,7 +33,8 @@ public class MapListCommand implements Action {
         ServiceReference<PersistentMap> reference = context
                 .getServiceReference(PersistentMap.class);
         Bundle targetBundle = bundle.getBundleContext().getBundle(Long.valueOf(bundleId));
-        Map<String, Object> map = context.getService(reference).getMapForBundle(targetBundle);
+        Map<String, Object> map = ((PersistentMapImpl)context.getService(reference))
+                .getImplementation().getMapForBundle(targetBundle);
 
         // Build the table
         ShellTable table = new ShellTable();

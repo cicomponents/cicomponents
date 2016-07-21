@@ -37,15 +37,13 @@ import java.util.stream.IntStream;
 public class GithubOAuthTokenProvisioner implements GithubOAuthFinalizer {
 
     @Reference
-    protected PersistentMap pMap;
-    private Map<String, Object> persistentMap;
+    protected PersistentMap persistentMap;
 
     private ComponentContext context;
 
     @Activate
     protected void activate(ComponentContext context) {
         this.context = context;
-        this.persistentMap = pMap.getMapForBundle(context.getBundleContext().getBundle());
     }
 
     private Map<UUID, Collection<OAuthTokenProvider>> registrations = new HashMap<>();

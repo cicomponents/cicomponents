@@ -7,7 +7,7 @@ This simple interface allows to store any serializable (i.e. having a class impl
 protected volatile PersistentMap persistentMap;
 ```
 
-`PersistentMap#getMapForBundle(bundle)` returns a `Map<String, Serializable>` for the bundle.
+`PersistentMap#getMapForBundle(bundle)` implements `Map<String, Serializable>` and is scoped to a using bundle. This prevents the leakage of the map outside of the bundle's scope.
 
 ## Console commands
 

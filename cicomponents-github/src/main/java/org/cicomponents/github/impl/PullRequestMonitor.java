@@ -51,7 +51,7 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
 
     public PullRequestMonitor(Environment environment, Dictionary<String, ?> dictionary) {
         this.environment = environment;
-        persistentMap = environment.getPersistentMap().getMapForBundle(FrameworkUtil.getBundle(PullRequestMonitor.class));
+        persistentMap = environment.getPersistentMap();
         context = FrameworkUtil.getBundle(PullRequestMonitor.class).getBundleContext();
         repository = (String) dictionary.get("github-repository");
 
