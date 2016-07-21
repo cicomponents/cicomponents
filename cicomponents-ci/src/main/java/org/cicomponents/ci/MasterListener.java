@@ -8,10 +8,7 @@
 package org.cicomponents.ci;
 
 import lombok.SneakyThrows;
-import org.cicomponents.OutputProviderService;
-import org.cicomponents.ResourceEmitter;
-import org.cicomponents.ResourceHolder;
-import org.cicomponents.ResourceListener;
+import org.cicomponents.*;
 import org.cicomponents.git.GitRevision;
 import org.cicomponents.git.GitRevisionEmitter;
 import org.osgi.service.component.annotations.Component;
@@ -27,6 +24,9 @@ public class MasterListener implements ResourceListener<GitRevision> {
     @Reference
     protected OutputProviderService outputProviderService;
 
+    @Reference
+    protected PersistentMap pmap;
+
     /**
      * This method is invoked when a new {@link GitRevision} has been emitted.
      *
@@ -37,7 +37,12 @@ public class MasterListener implements ResourceListener<GitRevision> {
     @SneakyThrows
     public void onEmittedResource(ResourceHolder<GitRevision> holder, ResourceEmitter<GitRevision> emitter) {
         try (GitRevision resource = holder.acquire()) {
-          new Builder(resource, outputProviderService).get();
+            Boolean result = new Builder(resource, outputProviderService).get();
+            if (result) {
+                pmap.put("build-status", "passing");
+            } else {
+                pmap.put("build-status", "failed");
+            }
         }
     }
 }

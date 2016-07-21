@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':cicomponents-badges-api')
+    compile 'org.jfree:jfreesvg:3.1'
+}
