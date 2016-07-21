@@ -7,6 +7,7 @@ dependencies {
     compile 'org.apache.karaf.config:org.apache.karaf.config.core:4.0.5'
 
     compile 'com.esotericsoftware:kryo:4.0.0'
+    compile 'com.h2database:h2-mvstore:1.4.192'
 }
 
 
