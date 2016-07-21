@@ -3,6 +3,9 @@ include 'cicomponents-api'
 include 'cicomponents-core'
 include 'cicomponents-common'
 
+include 'cicomponents-badges-api'
+include 'cicomponents-badges'
+
 include 'cicomponents-fs-api'
 include 'cicomponents-fs'
 include 'cicomponents-git-api'

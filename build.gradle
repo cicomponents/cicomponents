@@ -137,6 +137,8 @@ configurations {
 dependencies {
     dist project(':cicomponents-api')
     dist project(':cicomponents-common')
+    dist project(':cicomponents-badges-api')
+    dist project(':cicomponents-badges')
     dist project(':cicomponents-core')
     dist project(':cicomponents-fs-api')
     dist project(':cicomponents-fs')
