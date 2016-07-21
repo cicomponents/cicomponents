@@ -21,10 +21,10 @@ import org.osgi.framework.ServiceReference;
 
 import java.util.Map;
 
-@Command(scope = "map", name = "list", description = "List keys and values in PersistentMap")
+@Command(scope = "pmap", name = "list", description = "List keys and values in PersistentMap")
 @Service
 public class MapListCommand implements Action {
-    @Argument(required = true, description = "Bundle ID")
+    @Argument(description = "Bundle ID")
     protected String bundleId;
 
     @Override public Object execute() throws Exception {
@@ -32,9 +32,30 @@ public class MapListCommand implements Action {
         BundleContext context = bundle.getBundleContext();
         ServiceReference<PersistentMap> reference = context
                 .getServiceReference(PersistentMap.class);
-        Bundle targetBundle = bundle.getBundleContext().getBundle(Long.valueOf(bundleId));
+
+        if (bundleId != null) {
+            Bundle targetBundle = bundle.getBundleContext().getBundle(Long.valueOf(bundleId));
+            ShellTable shellTable = printKeys(context, reference, targetBundle, false);
+            shellTable.print(System.out);
+        } else {
+            for (Bundle targetBundle : bundle.getBundleContext().getBundles()) {
+                ShellTable shellTable = printKeys(context, reference, targetBundle, true);
+                if (shellTable != null) {
+                    System.out.println();
+                    System.out.println(targetBundle.getBundleId() + " - " + targetBundle.getSymbolicName());
+                    System.out.println();
+                    shellTable.print(System.out);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private ShellTable printKeys(BundleContext context, ServiceReference<PersistentMap> reference,
+                           Bundle targetBundle, boolean nullIfEmpty) {
         Map<String, Object> map = ((PersistentMapImpl)context.getService(reference))
-                .getImplementation().getMapForBundle(targetBundle);
+                                   .getImplementation().getMapForBundle(targetBundle);
 
         // Build the table
         ShellTable table = new ShellTable();
@@ -47,11 +68,12 @@ public class MapListCommand implements Action {
             table.addRow().addContent(entry.getKey(), entry.getValue());
         }
 
-        // Print it
-        table.print(System.out);
+        if (map.isEmpty() && nullIfEmpty) {
+            table = null;
+        }
 
         context.ungetService(reference);
 
-        return null;
+        return table;
     }
 }
