@@ -36,8 +36,7 @@ public class LatestRevisionGitBranchMonitor extends AbstractLocalGitMonitor {
     public LatestRevisionGitBranchMonitor(Environment environment, Dictionary<String, ?> dictionary) {
         super(environment, dictionary);
         branch = (String) dictionary.get("branch");
-        persistentMap = environment.getPersistentMap().getMapForBundle(
-                FrameworkUtil.getBundle(LatestRevisionGitBranchMonitor.class));
+        persistentMap = environment.getPersistentMap();
         checkLatest();
     }
 

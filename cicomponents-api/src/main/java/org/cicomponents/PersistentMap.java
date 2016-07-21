@@ -11,6 +11,5 @@ import org.osgi.framework.Bundle;
 
 import java.util.Map;
 
-public interface PersistentMap {
-    <T> Map<String, T> getMapForBundle(Bundle bundle);
+public interface PersistentMap extends Map<String, Object> {
 }
