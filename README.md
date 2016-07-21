@@ -1,6 +1,8 @@
 CI Components
 =============
 
+[![Join the chat at https://gitter.im/cicomponents/cicomponents](https://badges.gitter.im/cicomponents/cicomponents.svg)](https://gitter.im/cicomponents/cicomponents?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 Most of CI (*continuous integration*) tools are rather difficult to operate. Many of them require a buy-in into their domain model (*what's a project? what's a build step? what's a release?*) and some of them even require an extensive use of UI to configure.
 
 **CI Components** turns the model inside out by letting every project decide what their model and workflow should be like — described in code. To facilitate this, CI Components provides a set of components useful in building a CI setup, as well as a foundation to build more of these components.
