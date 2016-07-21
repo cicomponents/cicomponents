@@ -179,34 +179,6 @@ karaf {
                 instruction 'Bundle-Version', '0.1.53'
             }
 
-            bundle('org.cicomponents:cicomponents-core') {
-                // it is important to register its services
-                // before others to register hooks before service discovery
-                // is performed
-                attribute 'start-level', '30'
-            }
-
-            bundle('org.cicomponents:cicomponents-fs') {
-                // it is important to register its services
-                // before others to register hooks before service discovery
-                // is performed
-                attribute 'start-level', '30'
-            }
-
-            bundle('org.cicomponents:cicomponents-git') {
-                // it is important to register its services
-                // before others to register hooks before service discovery
-                // is performed
-                attribute 'start-level', '40'
-            }
-
-            bundle('org.cicomponents:cicomponents-github') {
-                // it is important to register its services
-                // before others to register hooks before service discovery
-                // is performed
-                attribute 'start-level', '40'
-            }
-
         }
     }
 

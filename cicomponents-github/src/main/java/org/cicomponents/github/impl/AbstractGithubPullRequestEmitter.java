@@ -5,19 +5,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
-package org.cicomponents.git.impl;
+package org.cicomponents.github.impl;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.cicomponents.common.AbstractResourceEmitter;
-import org.cicomponents.git.GitRevision;
-import org.cicomponents.git.GitRevisionEmitter;
+import org.cicomponents.github.GithubPullRequest;
+import org.cicomponents.github.GithubPullRequestEmitter;
 
-public abstract class AbstractGitMonitor extends AbstractResourceEmitter<GitRevision>
-        implements GitRevisionEmitter {
-
-    @Getter @Setter
-    private Environment environment;
+public abstract class AbstractGithubPullRequestEmitter extends AbstractResourceEmitter<GithubPullRequest>
+        implements GithubPullRequestEmitter {
 
     abstract void pause();
     abstract void resume();

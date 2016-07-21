@@ -12,12 +12,10 @@ import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
-import org.cicomponents.common.AbstractResourceEmitter;
 import org.cicomponents.common.SimpleResourceHolder;
 import org.cicomponents.fs.WorkingDirectory;
 import org.cicomponents.github.GithubOAuthTokenProvider;
 import org.cicomponents.github.GithubPullRequest;
-import org.cicomponents.github.GithubPullRequestEmitter;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.ObjectId;
 import org.kohsuke.github.*;
@@ -34,8 +32,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
-public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullRequest>
-                                implements GithubPullRequestEmitter {
+public class PullRequestMonitor extends AbstractGithubPullRequestEmitter {
 
     public static final String HOOK_NAME = "web";
     public static final String TYPE = "pull-request-v1";
@@ -57,7 +54,14 @@ public class PullRequestMonitor extends AbstractResourceEmitter<GithubPullReques
 
         serviceTracker = new ServiceTracker<>(context, GithubOAuthTokenProvider.class,
                                               new GithubOAuthTokenProviderServiceTracker());
+    }
+
+    @Override void resume() {
         serviceTracker.open();
+    }
+
+    @Override void pause() {
+        serviceTracker.close();
     }
 
     @SneakyThrows

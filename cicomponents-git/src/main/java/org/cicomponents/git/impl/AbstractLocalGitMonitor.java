@@ -22,27 +22,58 @@ import java.io.File;
 import java.util.Dictionary;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public abstract class AbstractLocalGitMonitor extends AbstractGitMonitor {
     @Getter
-    protected final Git git;
+    protected Git git;
     private WorkingDirectory workingDirectory;
+    private final ScheduledExecutorService executor;
+    private ScheduledFuture<?> scheduledFuture;
+    private boolean initialized = false;
+    private final String repository;
 
     @SneakyThrows
     public AbstractLocalGitMonitor(Environment environment, Dictionary<String, ?> dictionary) {
         setEnvironment(environment);
         workingDirectory = getEnvironment().getWorkingDirectoryProvider().getDirectory();
-        git = Git.cloneRepository()
-                 .setURI(((String) dictionary.get("repository")))
-                 .setDirectory(new File(workingDirectory.getDirectory() + "/git"))
-                 .call();
-        git.getRepository().getListenerList().addRefsChangedListener(this::emitRevisionIfNecessary);
-        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-        executor.scheduleWithFixedDelay(this::pull, 0, 10, TimeUnit.SECONDS);
+        repository = (String) dictionary.get("repository");
+        executor = Executors.newSingleThreadScheduledExecutor();
     }
+
+    @Override void resume() {
+        if (!initialized) {
+            initialized = true;
+            executor.schedule(new Runnable() {
+                @SneakyThrows
+                @Override public void run() {
+                    log.info("Cloning {}", repository);
+                    git = Git.cloneRepository()
+                             .setURI(repository)
+                             .setDirectory(new File(workingDirectory.getDirectory() + "/git"))
+                             .call();
+                    git.getRepository().getListenerList()
+                       .addRefsChangedListener(AbstractLocalGitMonitor.this::emitRevisionIfNecessary);
+
+                    onGitReady();
+
+                    resume(); // initialize pulls
+                }
+            }, 0, TimeUnit.SECONDS);
+        }
+        scheduledFuture = executor.scheduleWithFixedDelay(this::pull, 0, 10, TimeUnit.SECONDS);
+    }
+
+    @Override void pause() {
+        if (scheduledFuture != null) {
+            scheduledFuture.cancel(false);
+        }
+    }
+
+    protected abstract void onGitReady();
 
     protected abstract void emitRevisionIfNecessary(RefsChangedEvent event);
 
