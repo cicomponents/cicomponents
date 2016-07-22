@@ -4,6 +4,7 @@
 .idea
 .gradle
 build
+target
 out
 _book
 .DS_Store

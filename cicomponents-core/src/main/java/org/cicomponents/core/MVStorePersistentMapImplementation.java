@@ -24,9 +24,8 @@ import org.osgi.service.component.annotations.ServiceScope;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Paths;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -45,8 +44,8 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
         store.close();
     }
 
-    @Override public <T> Map<String, T> getMapForBundle(Bundle bundle) {
-        return new Backend<>(store, bundle);
+    @Override public <T> Map<String, T> getMapForBundle(Bundle bundle, CharSequence namespace) {
+        return new Backend<>(store, bundle, namespace);
     }
 
     private final class Backend<T> implements Map<String, T> {
@@ -54,12 +53,13 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
         private final MVMap<String, byte[]> map;
 
         @SneakyThrows
-        public Backend(MVStore store, Bundle bundle) {
+        public Backend(MVStore store, Bundle bundle, CharSequence namespace) {
             kryo = new Kryo();
             kryo.setClassLoader(bundle.adapt(BundleWiring.class).getClassLoader());
-            map = store.openMap(bundle.getSymbolicName());
+            map = store.openMap(namespace.toString());
         }
 
+        @SneakyThrows
         private byte[] serialize(T value) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             Output output = new Output(bos);
@@ -68,6 +68,7 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
             return bos.toByteArray();
         }
 
+        @SneakyThrows
         private T deserialize(byte[] bytes) {
             if (bytes == null) {
                 return null;
@@ -90,18 +91,17 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
         }
 
         @Override public boolean containsValue(Object value) {
-            @SuppressWarnings("unchecked")
-            boolean b = map.containsValue(serialize((T) value));
-            return b;
+            return values().contains(value);
         }
 
-        @SneakyThrows
         @Override public T get(Object key) {
             return deserialize(map.get(key));
         }
 
-        @SneakyThrows
         @Override public T put(String key, T value) {
+            if (key == null) {
+                throw new RuntimeException("null keys not allowed");
+            }
             return deserialize(map.put(key, serialize(value)));
         }
 
@@ -114,7 +114,6 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
                         .collect(Collectors.toMap(Entry::getKey, e -> serialize(e.getValue()))));
         }
 
-        @SneakyThrows
         @Override public void clear() {
             map.clear();
         }
@@ -124,11 +123,72 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
         }
 
         @Override public Collection<T> values() {
-            return map.values().stream().map(this::deserialize).collect(Collectors.toList());
+            return
+            new AbstractCollection<T>() {
+                public Iterator<T> iterator() {
+                    return new Iterator<T>() {
+                        private Iterator<Entry<String,byte[]>> i = map.entrySet().iterator();
+
+                        public boolean hasNext() {
+                            return i.hasNext();
+                        }
+
+                        public T next() {
+                            return deserialize(i.next().getValue());
+                        }
+
+                        public void remove() {
+                            i.remove();
+                        }
+                    };
+                }
+
+                public int size() {
+                    return map.size();
+                }
+
+                public boolean isEmpty() {
+                    return map.isEmpty();
+                }
+
+                public void clear() {
+                    map.clear();
+                }
+
+                public boolean contains(Object v) {
+                    Iterator<T> iterator = iterator();
+                    while (iterator.hasNext()) {
+                        T next = iterator.next();
+                        if (next == null) {
+                            if (v == null) {
+                                return true;
+                            }
+                        } else {
+                            if (next.equals(v)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                }
+            };
         }
 
         @Override public Set<Entry<String, T>> entrySet() {
             return map.entrySet().stream().map(PMapEntry::new).collect(Collectors.toSet());
+        }
+
+        @Override public int hashCode() {
+            int h = 0;
+            Iterator<Entry<String, T>> i = entrySet().iterator();
+            while (i.hasNext())
+                h += i.next().hashCode();
+            return h;
+        }
+
+        @Override public boolean equals(Object obj) {
+            return obj instanceof Map &&
+                   entrySet().equals(((Map) obj).entrySet());
         }
 
         private class PMapEntry implements Entry<String, T> {
@@ -149,14 +209,18 @@ public class MVStorePersistentMapImplementation implements PersistentMapImplemen
             }
 
             @Override public boolean equals(Object o) {
-                return o instanceof Map.Entry &&
-                        entry.getKey() == ((Entry) o).getKey() &&
-                        entry.getValue() == ((Entry) o).getValue();
+                T value = getValue();
+                return o instanceof Entry &&
+                        getKey().equals(((Entry) o).getKey()) &&
+                        ((value == null && ((Entry) o).getValue() == null) ||
+                         (value != null && value.equals(((Entry) o).getValue())));
             }
 
             @Override public int hashCode() {
-                return entry.hashCode();
+                T value = getValue();
+                return getKey().hashCode() ^ (value == null ? 0 : value.hashCode());
             }
+
         }
     }
 

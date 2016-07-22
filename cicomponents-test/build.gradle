@@ -1,0 +1,16 @@
+dependencies {
+    compile project(':cicomponents-api')
+    compile project(':cicomponents-core')
+
+    testCompile 'org.ops4j.pax.exam:pax-exam:4.9.1'
+    testCompile 'org.ops4j.pax.exam:pax-exam-junit4:4.9.1'
+    testCompile 'org.ops4j.pax.exam:pax-exam-container-karaf:4.9.1'
+    testCompile 'org.ops4j.pax.url:pax-url-aether:2.4.7'
+    testCompile 'org.ops4j.pax.url:pax-url-wrap:2.4.7'
+    testCompile 'org.ops4j.pax.url:pax-url-link:2.4.7'
+    testCompile 'org.ops4j.pax.url:pax-url-classpath:2.4.7'
+    testCompile 'javax.inject:javax.inject:1'
+    testCompile 'org.ops4j.pax.tinybundles:tinybundles:2.1.1'
+
+    testCompile 'com.google.guava:guava-testlib:19.0'
+}

@@ -87,4 +87,12 @@ public class PersistentMapImpl implements PersistentMap {
     @Override public Set<Entry<String, Object>> entrySet() {
         return map.entrySet();
     }
+
+    @Override public int hashCode() {
+        return map.hashCode();
+    }
+
+    @Override public boolean equals(Object obj) {
+        return map.equals(obj);
+    }
 }

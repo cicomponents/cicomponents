@@ -18,5 +18,8 @@ import java.util.Map;
  * implementation.
  */
 public interface PersistentMapImplementation  {
-    <T> Map<String, T> getMapForBundle(Bundle bundle);
+    <T> Map<String, T> getMapForBundle(Bundle bundle, CharSequence namespace);
+    default <T> Map<String, T> getMapForBundle(Bundle bundle) {
+        return getMapForBundle(bundle, bundle.getSymbolicName());
+    };
 }

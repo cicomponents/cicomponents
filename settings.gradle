@@ -14,6 +14,8 @@ include 'cicomponents-git'
 include 'cicomponents-github-api'
 include 'cicomponents-github'
 
+include 'cicomponents-test'
+
 include 'cicomponents-ci' // self-hosted CI
 
 rootProject.name = 'cicomponents'

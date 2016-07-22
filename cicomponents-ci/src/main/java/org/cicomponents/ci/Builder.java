@@ -46,7 +46,7 @@ public class Builder implements Supplier<Boolean> {
             BuildLauncher buildLauncher =
                     connection
                             .newBuild()
-                            .forTasks("check", "dist")
+                            .forTasks("dist", "check")
                             .setStandardOutput(standardOutput)
                             .setStandardError(standardError);
 
