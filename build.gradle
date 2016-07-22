@@ -1,3 +1,5 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
 buildscript {
     repositories {
         jcenter()
@@ -196,7 +198,11 @@ publishToMavenLocal.dependsOn generateFeatures
 
 task dist(type: Exec) {
     workingDir "dist"
-    commandLine "mvn", "install", "-Drelease.version=${rootProject.version}"
+    if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+        commandLine "cmd", "/c", "mvn install -Drelease.version=${rootProject.version}"
+    } else {
+        commandLine "mvn", "install", "-Drelease.version=${rootProject.version}"
+    }
 }
 
 dist.dependsOn publishToMavenLocal
