@@ -1,7 +1,3 @@
-repositories {
-    jcenter() // jenkins doesn't live on mavenCentral
-}
-
 dependencies {
     compile project(':cicomponents-git-api')
     compile project(':cicomponents-github-api')
