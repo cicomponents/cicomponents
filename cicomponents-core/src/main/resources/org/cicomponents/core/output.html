@@ -1,0 +1,80 @@
+<!--
+
+    Copyright (c) 2016, All Contributors (see CONTRIBUTORS file)
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+-->
+<html>
+ <head>
+  <title>Output</title>
+  <link href='https://fonts.googleapis.com/css?family=Inconsolata:400,700' rel='stylesheet' type='text/css'>
+ </head>
+ <body style="background-color: black; width: 100%; height: 100%; color: #d0d0d0">
+ <pre id="output" style="font-family: Inconsolata, monospace">
+ </pre>
+
+ <script>
+     var pathComponents = window.location.pathname.split("/");
+     var uuid = pathComponents[pathComponents.length-1];
+     var rootOutput = document.getElementById("output");
+     rootOutput.innerHTML = "";
+     var output = document.createElement("span");
+     rootOutput.appendChild(output);
+     var ws = new WebSocket("ws://" + window.location.host + "/output/ws/" + uuid);
+     var buffer = [];
+     var connected;
+     var lastError = null;
+     var errorText = "";
+
+     var dequeue = function () {
+      var data;
+      var text = "";
+      var buflen = buffer.length;
+      while (typeof (data = buffer.shift()) != 'undefined') {
+        if (data.kind == "STDERR") {
+         if (!!lastError) {
+          errorText += atob(data.output);
+         } else {
+          output.innerText += text;
+          text = "";
+          errorText += atob(data.output);
+          lastError = document.createElement("span");
+          lastError.setAttribute("style", "color: red");
+         }
+        } else {
+         if (!!lastError) {
+          lastError.innerText = errorText;
+          rootOutput.appendChild(lastError);
+          output = document.createElement("span");
+          rootOutput.appendChild(output);
+          lastError = null;
+          errorText = "";
+         }
+         text += atob(data.output);
+        }
+      }
+      output.innerText += text;
+      if (buflen > 0) {
+       window.scrollTo(0, document.body.scrollHeight || document.documentElement.scrollHeight);
+      }
+      if (connected) {
+        setTimeout(dequeue, 100);
+       }
+     };
+     ws.onclose = function () {
+        connected = false;
+     };
+     ws.onopen = function() {
+        connected = true;
+        setTimeout(dequeue, 100);
+     };
+     ws.onmessage = function(msg) {
+         var data = JSON.parse(msg.data);
+         buffer.push(data);
+     };
+ </script>
+ </body>
+</html>
