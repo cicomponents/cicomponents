@@ -7,6 +7,7 @@
  */
 package org.cicomponents.test;
 
+import com.cicomponents.test.ContainerConfiguration;
 import com.google.common.collect.testing.MapInterfaceTest;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
@@ -16,23 +17,15 @@ import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.ops4j.pax.exam.options.MavenUrlReference;
 import org.ops4j.pax.exam.spi.reactors.ExamReactorStrategy;
 import org.ops4j.pax.exam.spi.reactors.PerClass;
-import org.ops4j.pax.tinybundles.core.TinyBundles;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.Constants;
 
 import javax.inject.Inject;
-import java.io.File;
-import java.io.InputStream;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
-import static org.ops4j.pax.exam.CoreOptions.*;
-import static org.ops4j.pax.exam.karaf.options.KarafDistributionOption.*;
-import static org.ops4j.pax.exam.karaf.options.LogLevelOption.LogLevel.WARN;
+import static org.ops4j.pax.exam.CoreOptions.bundle;
 
 @RunWith(PaxExam.class)
 @ExamReactorStrategy(PerClass.class)
@@ -43,14 +36,6 @@ public class PersistentMapImplementationTest extends MapInterfaceTest<String, Ob
     @Inject
     private PersistentMapImplementation implementation;
 
-    final MavenUrlReference karafStandardRepo =
-            maven()
-                    .groupId("org.apache.karaf.features")
-                    .artifactId("standard")
-                    .version("4.0.5")
-                    .classifier("features")
-                    .type("xml");
-
 
     public PersistentMapImplementationTest() {
         super(false, true, true, true, true, false);
@@ -58,22 +43,7 @@ public class PersistentMapImplementationTest extends MapInterfaceTest<String, Ob
 
     @Configuration
     public Option[] config() {
-        return options(
-                keepCaches(),
-                karafDistributionConfiguration()
-                .frameworkUrl(maven().groupId("org.apache.karaf").artifactId("apache-karaf").type("zip")
-                                     .version("4.0.5"))
-                .useDeployFolder(false)
-                .karafVersion("4.0.5")
-                .unpackDirectory(new File("target/exam")),
-                keepRuntimeFolder(),
-                logLevel(WARN),
-                features(
-                        maven().groupId("org.cicomponents").artifactId("cicomponents").type("xml")
-                               .classifier("features").version("0.1.0-SNAPSHOT"), "cicomponents"),
-                junitBundles(),
-                bundle("wrap:mvn:com.google.guava/guava-testlib/19.0")
-        );
+        return ContainerConfiguration.withDefaultConfig();
     }
 
     @Test
