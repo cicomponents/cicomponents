@@ -79,18 +79,13 @@ public class OutputProviderImpl implements OutputProvider {
 
     @Synchronized("buffer")
     @Override public Stream<TimestampedOutput> getOutput() {
-        int initialBufferSize = buffer.size();
         Spliterator<TimestampedOutput> spliterator = Spliterators
-                .spliteratorUnknownSize(new TimestampedOutputIterator(initialBufferSize), Spliterator.CONCURRENT);
-        return Stream.concat(buffer.stream(), StreamSupport.stream(spliterator, false));
+                .spliteratorUnknownSize(new TimestampedOutputIterator(), Spliterator.CONCURRENT);
+        return StreamSupport.stream(spliterator, false);
     }
 
     private class TimestampedOutputIterator implements Iterator<TimestampedOutput> {
-        private int position;
-
-        public TimestampedOutputIterator(int initialBufferSize) {
-            this.position = initialBufferSize;
-        }
+        private int position = 0;
 
         @SneakyThrows
         @Override public boolean hasNext() {
