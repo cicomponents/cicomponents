@@ -8,6 +8,11 @@ dependencies {
 
     compile 'com.esotericsoftware:kryo:4.0.0'
     compile 'com.h2database:h2-mvstore:1.4.192'
+
+    // Output streaming
+    compile 'javax.servlet:javax.servlet-api:3.1.0'
+    compile 'org.eclipse.jetty.websocket:websocket-server:9.2.15.v20160210'
+    compile 'com.fasterxml.jackson.core:jackson-databind:2.8.1'
 }
 
 

@@ -132,6 +132,8 @@ configurations {
         it.exclude group: 'org.apache.felix'
         it.exclude group: 'org.eclipse.jetty'
         it.exclude group: 'org.ow2.asm'
+        it.exclude group: 'org.eclipse.jetty'
+        it.exclude group: 'org.eclipse.jetty.websocket'
     }
 
 }
