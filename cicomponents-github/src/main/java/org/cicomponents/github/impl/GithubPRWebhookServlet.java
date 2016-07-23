@@ -50,6 +50,8 @@ public class GithubPRWebhookServlet extends HttpServlet implements Servlet {
                 Map<String, Object> payload = new ObjectMapper().readValue(req.getReader(),
                                                                            new TypeReference<Map<String, Object>>() {});
 
+                asyncContext.complete();
+
                 String action = (String) payload.get("action");
                 Integer number = (Integer) payload.get("number");
                 @SuppressWarnings("unchecked")
@@ -65,8 +67,6 @@ public class GithubPRWebhookServlet extends HttpServlet implements Servlet {
                             .forEach(emitter -> emitter.onPullRequestEvent(number));
 
                 }
-
-                asyncContext.complete();
             }
         });
     }
