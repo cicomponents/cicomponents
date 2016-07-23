@@ -166,6 +166,14 @@ karaf {
 
             configurations 'dist'
 
+            feature('shell') {
+                version = "4.0.5"
+            }
+
+            feature('shell-compat') {
+                version = "4.0.5"
+            }
+
             feature('scr') {
                 version = "4.0.5"
             }
