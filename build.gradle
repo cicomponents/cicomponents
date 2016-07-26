@@ -7,18 +7,27 @@ buildscript {
     dependencies {
         classpath 'biz.aQute.bnd:biz.aQute.bnd.gradle:3.1.0'
         classpath "gradle.plugin.com.github.lburgazzoli:gradle-karaf-plugin:0.0.32"
+        classpath "io.codearte.gradle.nexus:gradle-nexus-staging-plugin:0.5.3"
+        classpath "com.bmuschko:gradle-nexus-plugin:2.3.1"
     }
 }
 
 plugins {
     id "com.github.hierynomus.license" version "0.12.1"
     id 'com.palantir.git-version' version '0.5.2'
+    id 'net.researchgate.release' version '2.4.0'
+}
+
+release {
+  tagTemplate = 'v${version}'
+  failOnPublishNeeded = false
 }
 
 // Maven
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 apply plugin: "com.github.lburgazzoli.karaf"
+apply plugin: "io.codearte.nexus-staging"
 
 publishing {
     publications {
@@ -57,6 +66,7 @@ subprojects {
     apply plugin: 'maven'
     apply plugin: 'maven-publish'
 
+    apply plugin: 'com.bmuschko.nexus'
 
     license {
       header rootProject.file('LICENSE-HEADER')
@@ -93,6 +103,83 @@ subprojects {
         compile 'biz.aQute.bnd:biz.aQute.bndlib:3.2.0'
 
     }
+
+    task delombok(type: JavaExec) {
+          inputs.files(file('src/main/java'))
+          outputs.dir(file('src/main/delombok'))
+          classpath = configurations.compile
+          main = "lombok.launch.Main"
+          args("delombok", "--quiet", "src/main/java", "--target", "src/delombok/java")
+      }
+
+      javadoc {
+          inputs.files(file("src/delombok/java"))
+          source = file("src/delombok/java")
+          classpath = configurations.compile
+      }
+
+      javadoc.dependsOn(delombok)
+
+      task sourcesJar(type: Jar) {
+          group "Build"
+          description "An archive of the source code"
+          classifier "sources"
+          from sourceSets.main.allJava
+      }
+
+      task javadocJar(type: Jar) {
+          group "Build"
+          description "An archive of the javadoc"
+          classifier "javadoc"
+          from javadoc
+      }
+
+      jar.finalizedBy sourcesJar
+      jar.finalizedBy javadocJar
+
+      artifacts {
+          sourcesJar
+          javadocJar
+      }
+
+      extraArchive {
+       javadoc false
+       sources false
+      }
+
+      modifyPom {
+           project {
+               name project.name
+               description 'CI Components'
+               url 'http://cicomponents.org'
+               inceptionYear '2016'
+
+               scm {
+                   url 'https://github.com/cicomponents/cicomponents'
+                   connection 'scm:git:git://github.com/cicomponents/cicomponents.git'
+                   developerConnection 'scm:git:git@github.com:cicomponents/cicomponents.git'
+               }
+
+               licenses {
+                   license {
+                       name 'Mozilla Public License, v. 2.0'
+                       url 'http://mozilla.org/MPL/2.0/'
+                       distribution 'repo'
+                   }
+               }
+
+               developers {
+                   developer {
+                       id 'yrashk'
+                       name 'Yurii Rashkovskii'
+                       email 'yrashk@gmail.com'
+                   }
+               }
+
+               contributors {
+               }
+           }
+      }
 
 }
 
