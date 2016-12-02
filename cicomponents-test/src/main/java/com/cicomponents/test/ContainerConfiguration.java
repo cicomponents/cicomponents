@@ -27,7 +27,7 @@ public class ContainerConfiguration {
             maven()
                     .groupId("org.apache.karaf.features")
                     .artifactId("standard")
-                    .version("4.0.5")
+                    .version("4.0.7")
                     .classifier("features")
                     .type("xml");
 

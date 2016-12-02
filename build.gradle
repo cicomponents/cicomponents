@@ -246,7 +246,7 @@ dependencies {
 karaf {
     features {
         xsdVersion = '1.3.0'
-        repository "mvn:org.apache.karaf.features/standard/4.0.5/xml/features"
+        repository "mvn:org.apache.karaf.features/standard/4.0.7/xml/features"
 
 
         feature {
@@ -256,15 +256,15 @@ karaf {
             configurations 'dist'
 
             feature('shell') {
-                version = "4.0.5"
+                version = "4.0.7"
             }
 
             feature('shell-compat') {
-                version = "4.0.5"
+                version = "4.0.7"
             }
 
             feature('scr') {
-                version = "4.0.5"
+                version = "4.0.7"
             }
 
             feature('wrap') {
@@ -272,11 +272,11 @@ karaf {
             }
 
             feature('war') {
-                version = "4.0.5"
+                version = "4.0.7"
             }
 
             feature('jaas') {
-                version = "4.0.5"
+                version = "4.0.7"
             }
 
             bundle('com.jcraft:jsch') {
