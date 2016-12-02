@@ -32,8 +32,8 @@ dependencies {
     compile project(':cicomponents-github-api')
     compile project(':cicomponents-badges-api')
 
-    compile 'org.gradle:gradle-tooling-api:2.13'
-    dist    'org.gradle:gradle-tooling-api:2.13'
+    compile 'org.gradle:gradle-tooling-api:3.1'
+    dist    'org.gradle:gradle-tooling-api:3.1'
 
     compile 'javax.servlet:javax.servlet-api:3.1.0'
 }
