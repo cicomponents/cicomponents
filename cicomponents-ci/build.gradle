@@ -1,5 +1,8 @@
 apply plugin: "com.github.lburgazzoli.karaf"
 
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
 repositories {
     jcenter()
 }
@@ -48,8 +51,26 @@ karaf {
 
             configurations 'dist'
         }
+
+        outputFile = new File(
+                "${project.buildDir}/karaf/features",
+                "${name}-${version}-features.xml"
+        )
     }
 
     kar {}
 }
 
+
+publishing {
+    publications {
+        Publication(MavenPublication) {
+            groupId project.group
+            artifactId project.name
+            artifact("${project.buildDir}/karaf/features/${project.name}-${project.version}-features.xml") {
+                classifier "features"
+            }
+        }
+    }
+}
+publishToMavenLocal.dependsOn generateFeatures
