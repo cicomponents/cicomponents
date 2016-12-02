@@ -38,13 +38,13 @@ public class ContainerConfiguration {
                 keepCaches(),
                 karafDistributionConfiguration()
                 .frameworkUrl(maven().groupId("org.apache.karaf").artifactId("apache-karaf-minimal").type("zip")
-                                     .version("4.0.5"))
-                .karafVersion("4.0.5")
+                                     .version("4.0.7"))
+                .karafVersion("4.0.7")
                 .unpackDirectory(new File("target/exam")),
                 keepRuntimeFolder(),
                 logLevel(WARN),
                 features(maven().groupId("org.cicomponents").artifactId("cicomponents").type("xml")
-                       .classifier("features").version("0.1.0-SNAPSHOT"), "cicomponents"),
+                       .classifier("features").version("0.2.0-SNAPSHOT"), "cicomponents"),
                 junitBundles(),
                 features(karafStandardRepo),
                 bundle("wrap:mvn:com.google.guava/guava-testlib/19.0"),
