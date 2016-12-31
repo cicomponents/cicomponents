@@ -10,11 +10,11 @@ dependencies {
     compile 'com.ning:async-http-client:1.9.38'
     compile 'org.asynchttpclient:async-http-client:2.0.4'
 
-    compile 'org.apache.karaf.shell:org.apache.karaf.shell.core:4.0.7'
-    compile 'org.apache.karaf.shell:org.apache.karaf.shell.commands:4.0.7'
-    compile 'org.apache.karaf.shell:org.apache.karaf.shell.console:4.0.7'
-    compile 'org.apache.karaf.shell:org.apache.karaf.shell.table:4.0.7'
-    compile 'org.apache.karaf.config:org.apache.karaf.config.core:4.0.7'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.core:4.0.8'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.commands:4.0.8'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.console:4.0.8'
+    compile 'org.apache.karaf.shell:org.apache.karaf.shell.table:4.0.8'
+    compile 'org.apache.karaf.config:org.apache.karaf.config.core:4.0.8'
 }
 
 

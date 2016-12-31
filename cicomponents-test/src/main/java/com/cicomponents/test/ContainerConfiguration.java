@@ -27,7 +27,7 @@ public class ContainerConfiguration {
             maven()
                     .groupId("org.apache.karaf.features")
                     .artifactId("standard")
-                    .version("4.0.7")
+                    .version("4.0.8")
                     .classifier("features")
                     .type("xml");
 
@@ -38,8 +38,8 @@ public class ContainerConfiguration {
                 keepCaches(),
                 karafDistributionConfiguration()
                 .frameworkUrl(maven().groupId("org.apache.karaf").artifactId("apache-karaf-minimal").type("zip")
-                                     .version("4.0.7"))
-                .karafVersion("4.0.7")
+                                     .version("4.0.8"))
+                .karafVersion("4.0.8")
                 .unpackDirectory(new File("target/exam")),
                 keepRuntimeFolder(),
                 logLevel(WARN),
